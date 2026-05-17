@@ -1,0 +1,6 @@
+{
+  "name": "你真的了解他吗？",
+  "description": "人格行为对齐测试网页，测试朋友对主人的了解程度的百分比报告。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
