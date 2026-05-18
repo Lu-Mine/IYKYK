@@ -6,6 +6,7 @@ import {
   Home,
   ChevronDown,
   ChevronUp,
+  Rocket,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { HOST_NAME, HOST_SCORES, QUESTIONS } from "./constants";
@@ -44,6 +45,11 @@ type ViewState = "home" | "quiz" | "overview" | "result";
 export default function App() {
   const [view, setView] = useState<ViewState>("home");
   const [userName, setUserName] = useState("");
+  const [quizData, setQuizData] = useState({
+    questions: QUESTIONS,
+    hostScores: HOST_SCORES,
+    hostName: HOST_NAME,
+  });
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userScores, setUserScores] = useState<number[]>([]);
   const [showMatches, setShowMatches] = useState(false);
@@ -54,25 +60,30 @@ export default function App() {
     userName: string;
     userScores: number[];
     timeSpentMessage: string | null;
+    isSkipped: boolean;
   } | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number>(0);
   const [timeSpentMessage, setTimeSpentMessage] = useState<string | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [questionHistory, setQuestionHistory] = useState<number[]>([]);
+  const [isSkipped, setIsSkipped] = useState(false);
 
-  const totalQuestions = QUESTIONS.length;
+  const isAIStudio = useMemo(() => {
+    return window.location.hostname.includes("run.app") || window.location.hostname.includes("ai.studio") || window.location.hostname.includes("google");
+  }, []);
+
+  const totalQuestions = quizData.questions.length;
 
   const calculateResult = useCallback(() => {
     const scoreConfig = [100, 90, 60, 40, 30, 10, 0];
     let totalScore = 0;
     for (let i = 0; i < totalQuestions; i++) {
-      const diff = Math.abs((HOST_SCORES[i] || 4) - (userScores[i] || 4));
+      const diff = Math.abs((quizData.hostScores[i] || 4) - (userScores[i] || 4));
       const errorIndex = Math.min(Math.max(diff, 0), 6);
       totalScore += scoreConfig[errorIndex];
     }
     return Math.round(totalScore / totalQuestions);
-  }, [userScores, totalQuestions]);
+  }, [userScores, totalQuestions, quizData.hostScores]);
 
   const handleSubmit = useCallback(() => {
     if (userScores.length !== totalQuestions || userScores.some((s) => s === undefined)) return;
@@ -134,11 +145,17 @@ export default function App() {
   }, [view, currentQuestion, userName, userScores, isTransitioning, handleSubmit]);
 
   const triggerSecretPass = useCallback(() => {
+    setQuizData({
+      questions: QUESTIONS,
+      hostScores: HOST_SCORES,
+      hostName: HOST_NAME,
+    });
     setUserScores([...HOST_SCORES]);
     setTimeSpentMessage(null);
     setIsReviewing(true);
     setView("overview");
     setIsTransitioning(false);
+    setIsSkipped(true);
   }, []);
 
   const getScoreStyles = (s: number, isSelected: boolean) => {
@@ -184,7 +201,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    document.title = `IYKYK | 来自 ${HOST_NAME} 的 Quiz`;
+    document.title = `IYKYK | 来自 ${quizData.hostName} 的 Quiz`;
+  }, [quizData.hostName]);
+
+  // Remove the scroll effect entirely since the container will just expand now.
+  useEffect(() => {
+    // Intentionally empty or remove effect. We don't want scroll manipulation anymore.
   }, []);
 
   const handleStart = () => {
@@ -199,6 +221,7 @@ export default function App() {
     setDirection(1);
     startTimeRef.current = Date.now();
     setTimeSpentMessage(null);
+    setIsSkipped(false);
   };
 
   const handleScore = useCallback(
@@ -284,33 +307,25 @@ export default function App() {
   }, [view, isTransitioning, handleScore]);
 
   useEffect(() => {
-    const handleShortcut = (e: KeyboardEvent) => {
-      if (
-        e.ctrlKey &&
-        e.shiftKey &&
-        (e.key === "l" || e.key === "L") &&
-        userName === "Console"
-      ) {
-        e.preventDefault();
-        triggerSecretPass();
-      }
+    const secretTrigger = () => {
+      triggerSecretPass();
+      return "Secret Pass Triggered!";
     };
+    
+    (window as any)["If_you_know_you_know"] = secretTrigger;
+    (window as any)["IfYouKnowYouKnow"] = secretTrigger;
+    
+    Object.defineProperty(window, 'If you know you know', {
+      get: secretTrigger,
+      configurable: true
+    });
 
-    window.addEventListener("keydown", handleShortcut);
-    return () => window.removeEventListener("keydown", handleShortcut);
-  }, [userName, triggerSecretPass]);
-
-  useEffect(() => {
-    if (view === "quiz" && !isTransitioning && userName === "Console") {
-      setQuestionHistory((prev) => {
-        const next = [...prev, currentQuestion].slice(-9);
-        if (next.join(",") === "0,1,2,1,2,3,2,3,4") {
-          triggerSecretPass();
-        }
-        return next;
-      });
-    }
-  }, [currentQuestion, view, isTransitioning, triggerSecretPass, userName]);
+    return () => {
+      delete (window as any)["If_you_know_you_know"];
+      delete (window as any)["IfYouKnowYouKnow"];
+      delete (window as any)["If you know you know"];
+    };
+  }, [triggerSecretPass]);
 
   const handlePrev = () => {
     if (currentQuestion > 0 && !isTransitioning) {
@@ -368,10 +383,10 @@ export default function App() {
   const analysis = useMemo(() => {
     if (view !== "result") return { matches: [], gaps: [] };
     const all = userScores.map((score, index) => ({
-      question: QUESTIONS[index],
-      diff: Math.abs(score - HOST_SCORES[index]),
+      question: quizData.questions[index],
+      diff: Math.abs(score - quizData.hostScores[index]),
       userScore: score,
-      hostScore: HOST_SCORES[index],
+      hostScore: quizData.hostScores[index],
     }));
 
     const matches = all
@@ -385,7 +400,7 @@ export default function App() {
 
   const resetToHome = () => {
     if (view === "result") {
-      setSavedResult({ userName, userScores, timeSpentMessage });
+      setSavedResult({ userName, userScores, timeSpentMessage, isSkipped });
     }
     setUserName("");
     setUserScores([]);
@@ -394,11 +409,12 @@ export default function App() {
     setShowMatches(false);
     setIsReviewing(false);
     setDirection(1);
+    setIsSkipped(false);
   };
 
   const restartQuiz = () => {
     if (view === "result") {
-      setSavedResult({ userName, userScores, timeSpentMessage });
+      setSavedResult({ userName, userScores, timeSpentMessage, isSkipped });
     }
 
     setUserScores([]);
@@ -409,6 +425,7 @@ export default function App() {
     setDirection(1);
     startTimeRef.current = Date.now();
     setTimeSpentMessage(null);
+    setIsSkipped(false);
   };
 
   const restoreResult = () => {
@@ -416,16 +433,26 @@ export default function App() {
       setUserName(savedResult.userName);
       setUserScores(savedResult.userScores);
       setTimeSpentMessage(savedResult.timeSpentMessage);
+      setIsSkipped(savedResult.isSkipped);
       setView("result");
     }
   };
 
   return (
-    <div className="min-h-screen bg-green-morandi text-gray-dark font-sans flex flex-col items-center justify-center p-4 selection:bg-green-forest selection:text-white overflow-x-hidden w-full">
-      <div className="relative w-full max-w-[480px]">
+    <div className="min-h-[100dvh] bg-green-morandi text-gray-dark font-sans flex flex-col items-center py-8 px-4 sm:py-12 selection:bg-green-forest selection:text-white overflow-x-hidden w-full">
+      {isAIStudio && (
+        <button
+          onClick={triggerSecretPass}
+          className="fixed top-4 right-4 z-50 p-2 sm:p-3 bg-white/80 backdrop-blur-md rounded-full shadow-lg text-green-600 hover:text-green-500 hover:bg-white transition-all transform hover:scale-105"
+          title="Super Fast Pass"
+        >
+          <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
+      )}
+      <div className="my-auto relative w-full max-w-[480px]">
         <motion.div
           layout
-          transition={{ duration: 0.44, ease: "easeInOut" }}
+          transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
           className="w-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col relative min-h-0"
         >
           <AnimatePresence mode="popLayout">
@@ -470,7 +497,7 @@ export default function App() {
                       From{" "}
                     </span>
                     <span className="font-[Cambria,'Caladea',ui-serif,Georgia,'Times_New_Roman',Times,serif] text-2xl tracking-wide text-green-dark italic">
-                      {HOST_NAME}
+                      {quizData.hostName}
                     </span>
                     <span className="font-sans text-base text-gray-500 mr-1 not-italic font-medium">
                       {" "}:
@@ -503,11 +530,21 @@ export default function App() {
                     <a href="https://www.16personalities.com/" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-700">MBTI</a>
                     或是星座什么的来引发共鸣，回归到人与人间最具体的细节。
                   </p>
+
+                  <blockquote className="mb-6 border-l-[3px] border-green-forest/40 bg-green-forest/5 rounded-r-md px-3 py-2 my-2 text-sm text-gray-800 text-justify tracking-tight">
+                    <b>这个 Quiz 的意义在于比较：</b>
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 my-2 w-full">
+                      <span className="text-right text-base font-bold bg-gradient-to-r from-green-forest to-emerald-500 bg-clip-text text-transparent">我对自己的评价</span>
+                      <span className="text-sm font-normal text-gray-500 text-center">和</span>
+                      <span className="text-left text-base font-bold bg-gradient-to-r from-emerald-500 to-green-400 bg-clip-text text-transparent">你对我作的评价</span>
+                    </div>
+                    这样就能知道我心目中的自己和你眼里的我有怎样的差距。
+                  </blockquote>
+
                   <p className="text-[13px] text-gray-400 text-justify leading-snug tracking-tight">
                     Tips: 这个项目我自己完成了功能逻辑、交互设计，以及你看到的这组范例试卷的自评测算。当然了，要落地这个，还得拜托（指挥）了我最近很喜欢用的
                     <a href="https://ai.studio/build" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-500">Google Gemini</a>
                     帮我编写代码调试。我挺喜欢的，至少比豆包聪明。
-                    <br />
                     <br />
                   </p>
                 </motion.div>
@@ -600,7 +637,7 @@ export default function App() {
                       }}
                       className="bg-green-50 p-6 rounded-2xl border border-green-100 text-lg leading-relaxed text-center font-medium w-full text-balance"
                     >
-                      {QUESTIONS[currentQuestion]}
+                      {quizData.questions[currentQuestion]}
                     </motion.div>
                   </AnimatePresence>
                 </div>
@@ -630,7 +667,6 @@ export default function App() {
                   <div className="flex justify-between items-center mt-2 h-10">
                     <button
                       onClick={handlePrev}
-                      disabled={currentQuestion === 0}
                       className={`flex items-center gap-2 text-sm transition-colors py-2 px-4 rounded-lg flex-shrink-0 ${
                         currentQuestion === 0
                           ? "opacity-40 cursor-not-allowed text-gray-400"
@@ -676,7 +712,7 @@ export default function App() {
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-24 max-h-[55vh]">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-3">
-                      {QUESTIONS.slice(0, Math.ceil(QUESTIONS.length / 2)).map((question, sliceIdx) => {
+                      {quizData.questions.slice(0, Math.ceil(quizData.questions.length / 2)).map((question, sliceIdx) => {
                         const idx = sliceIdx;
                         return (
                           <div
@@ -703,8 +739,8 @@ export default function App() {
                       })}
                     </div>
                     <div className="space-y-3">
-                      {QUESTIONS.slice(Math.ceil(QUESTIONS.length / 2)).map((question, sliceIdx) => {
-                        const idx = sliceIdx + Math.ceil(QUESTIONS.length / 2);
+                      {quizData.questions.slice(Math.ceil(quizData.questions.length / 2)).map((question, sliceIdx) => {
+                        const idx = sliceIdx + Math.ceil(quizData.questions.length / 2);
                         return (
                           <div
                             key={idx}
@@ -737,7 +773,7 @@ export default function App() {
                     onClick={handleSubmit}
                     className="w-full py-3.5 bg-green-forest text-white rounded-xl font-bold text-lg shadow-lg shadow-green-200/50 hover:bg-green-600 transition-colors"
                   >
-                    提交 {HOST_NAME} 的 Quiz
+                    提交 {quizData.hostName} 的 Quiz
                   </button>
                 </div>
               </motion.div>
@@ -812,18 +848,18 @@ export default function App() {
                       </p>
                     </div>
                     <div className="mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 w-full max-w-[320px] sm:max-w-[360px] mx-auto">
-                      <div className="flex justify-end">
-                        <div className="px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center">
-                          <span className="text-green-forest text-lg sm:text-xl px-1 font-black truncate max-w-[100px] sm:max-w-[130px]">
-                            {userName}
+                      <div className="flex justify-center w-full min-w-0">
+                        <div className="px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center max-w-full">
+                          <span className="text-green-forest text-lg sm:text-xl font-black truncate">
+                            {isSkipped ? "Console" : userName}
                           </span>
                         </div>
                       </div>
-                      <span className="text-gray-400 font-bold text-lg px-2">与</span>
-                      <div className="flex justify-start">
-                        <div className="px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center">
-                          <span className="text-green-forest text-lg sm:text-xl px-1 font-black truncate max-w-[100px] sm:max-w-[130px]">
-                            {HOST_NAME}
+                      <span className="text-gray-400 font-bold text-lg px-1 text-center whitespace-nowrap">与</span>
+                      <div className="flex justify-center w-full min-w-0">
+                        <div className="px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center max-w-full">
+                          <span className="text-green-forest text-lg sm:text-xl font-black truncate">
+                            {isSkipped ? "Debugger" : quizData.hostName}
                           </span>
                         </div>
                       </div>
@@ -894,7 +930,9 @@ export default function App() {
                       <div className="h-px flex-grow bg-gray-200"></div>
                     </div>
 
-                    <div className="max-h-[350px] overflow-y-auto overflow-x-hidden pr-2 space-y-6 custom-scrollbar pb-4 -mr-2">
+                    <div 
+                      className="space-y-6 pb-4 relative"
+                    >
                       {/* 认知温差 - 优先展示并展开 */}
                       {analysis.gaps.length > 0 && (
                         <div className="space-y-3">
@@ -913,9 +951,14 @@ export default function App() {
                                 <span className="text-gray-500 block">
                                   “{item.question}”
                                 </span>
-                                <span className="absolute bottom-1.5 right-2 text-[12px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
-                                  {item.userScore} | {item.diff >= 4 ? '分差大' : '分差小'}
-                                </span>
+                                <div className="absolute bottom-1.5 right-2 flex gap-1">
+                                  <span className="text-[12px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                                    {item.diff >= 4 ? '差距大' : '差距小'}
+                                  </span>
+                                  <span className="text-[12px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                                    你打 {item.userScore} 分
+                                  </span>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -941,36 +984,46 @@ export default function App() {
                             </div>
                           </button>
 
-                          <motion.div
-                            className="matches-container overflow-hidden"
-                            initial={false}
-                            animate={{
-                              height: showMatches ? "auto" : 0,
-                              opacity: showMatches ? 1 : 0,
-                            }}
-                            transition={{ duration: 0.33, ease: "easeInOut" }}
-                          >
-                            <div className="space-y-3 pt-1 pb-1">
-                              <p className="text-[13px] text-green-800 font-medium opacity-90 px-1 border-l-2 border-green-300 ml-1 pl-2">
-                                在这里，你们共享着同一种直觉与默契。
-                              </p>
-                              <div className="space-y-2">
-                                {analysis.matches.map((item, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="bg-white p-3 pb-6 rounded-xl border border-green-100 text-[13px] leading-snug shadow-sm relative"
-                                  >
-                                    <span className="text-gray-500 block">
-                                      “{item.question}”
-                                    </span>
-                                    <span className="absolute bottom-1.5 right-2 text-[12px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
-                                      你评 {item.userScore} 分
-                                    </span>
+                          <AnimatePresence>
+                            {showMatches && (
+                              <motion.div
+                                layout
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                                className="matches-container overflow-hidden"
+                              >
+                                <div className="space-y-3 pt-1 pb-1">
+                                  <p className="text-[13px] text-green-800 font-medium opacity-90 px-1 border-l-2 border-green-300 ml-1 pl-2">
+                                    在这里，你们共享着同一种直觉与默契。
+                                  </p>
+                                  <div className="space-y-2">
+                                    {analysis.matches.map((item, idx) => (
+                                      <motion.div
+                                        key={idx}
+                                        initial={{ opacity: 0, y: -15 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ 
+                                          duration: 0.4, 
+                                          delay: 0.15 + idx * 0.1,
+                                          ease: "easeOut"
+                                        }}
+                                        className="bg-white p-3 pb-6 rounded-xl border border-green-100 text-[13px] leading-snug shadow-sm relative"
+                                      >
+                                        <span className="text-gray-500 block">
+                                          “{item.question}”
+                                        </span>
+                                        <span className="absolute bottom-1.5 right-2 text-[12px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                                          你评 {item.userScore} 分
+                                        </span>
+                                      </motion.div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
-                            </div>
-                          </motion.div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       )}
                     </div>
@@ -1003,21 +1056,15 @@ export default function App() {
           </AnimatePresence>
         </motion.div>
 
-        {view === "home" && savedResult && (
-          <div className="absolute top-full inset-x-0 pt-6 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-[550ms] z-10">
-            <button
-              onClick={restoreResult}
-              className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-green-dark/5"
+        <AnimatePresence>
+          {view === "home" && savedResult && (
+            <motion.div 
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0 } }}
+              transition={{ delay: 0.35, duration: 0.25, ease: "easeOut" }}
+              className="absolute top-full inset-x-0 pt-6 flex justify-center z-10"
             >
-              <ArrowLeft size={16} />
-              找回刚才的结果
-            </button>
-          </div>
-        )}
-
-        {view === "quiz" && currentQuestion === 0 && !isReviewing && (
-          <div className="absolute top-full inset-x-0 pt-6 flex justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-[550ms] z-10">
-            {savedResult && (
               <button
                 onClick={restoreResult}
                 className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-green-dark/5"
@@ -1025,16 +1072,36 @@ export default function App() {
                 <ArrowLeft size={16} />
                 找回刚才的结果
               </button>
-            )}
-            <button
-              onClick={resetToHome}
-              className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-green-dark/5"
+            </motion.div>
+          )}
+
+          {view === "quiz" && currentQuestion === 0 && !isReviewing && (
+            <motion.div 
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0 } }}
+              transition={{ delay: 0.35, duration: 0.25, ease: "easeOut" }}
+              className="absolute top-full inset-x-0 pt-6 flex justify-center gap-4 z-10"
             >
-              <Home size={16} />
-              回到主页
-            </button>
-          </div>
-        )}
+              {savedResult && (
+                <button
+                  onClick={restoreResult}
+                  className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-green-dark/5"
+                >
+                  <ArrowLeft size={16} />
+                  找回刚才的结果
+                </button>
+              )}
+              <button
+                onClick={resetToHome}
+                className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-green-dark/5"
+              >
+                <Home size={16} />
+                回到主页
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
