@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
+import confetti from "canvas-confetti";
 import {
   ArrowLeft,
   RefreshCcw,
@@ -58,8 +59,129 @@ export default function App() {
   const startTimeRef = useRef<number>(0);
   const [timeSpentMessage, setTimeSpentMessage] = useState<string | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [questionHistory, setQuestionHistory] = useState<number[]>([]);
 
   const totalQuestions = QUESTIONS.length;
+
+  const calculateResult = useCallback(() => {
+    const scoreConfig = [100, 90, 60, 40, 30, 10, 0];
+    let totalScore = 0;
+    for (let i = 0; i < totalQuestions; i++) {
+      const diff = Math.abs((HOST_SCORES[i] || 4) - (userScores[i] || 4));
+      const errorIndex = Math.min(Math.max(diff, 0), 6);
+      totalScore += scoreConfig[errorIndex];
+    }
+    return Math.round(totalScore / totalQuestions);
+  }, [userScores, totalQuestions]);
+
+  const handleSubmit = useCallback(() => {
+    if (userScores.length !== totalQuestions || userScores.some((s) => s === undefined)) return;
+    setIsEvaluating(true);
+    setTimeout(() => {
+      setIsEvaluating(false);
+      const result = calculateResult();
+      setTimeout(() => {
+        setView("result");
+        if (result === 100) {
+          const duration = 3 * 1000;
+          const animationEnd = Date.now() + duration;
+          const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+      
+          const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+      
+          const interval: any = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) return clearInterval(interval);
+      
+            const particleCount = 50 * (timeLeft / duration);
+            confetti({
+              ...defaults, particleCount,
+              origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+            });
+            confetti({
+              ...defaults, particleCount,
+              origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+            });
+          }, 250);
+        } else if (result >= 85) {
+          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        }
+      }, 200);
+    }, 800);
+  }, [userScores, totalQuestions, calculateResult]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+      
+      if (e.key === 'Backspace') {
+        if (view === 'quiz') {
+          handlePrev();
+        } else if (view === 'overview') {
+          setView('quiz'); 
+        }
+      } else if (e.key === 'Enter') {
+        if (view === 'home' && userName.trim()) {
+           handleStart();
+        } else if (view === 'overview') {
+           handleSubmit();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [view, currentQuestion, userName, userScores, isTransitioning, handleSubmit]);
+
+  const triggerSecretPass = useCallback(() => {
+    setUserScores([...HOST_SCORES]);
+    setTimeSpentMessage(null);
+    setIsReviewing(true);
+    setView("overview");
+    setIsTransitioning(false);
+  }, []);
+
+  const getScoreStyles = (s: number, isSelected: boolean) => {
+    if (isSelected) {
+      switch (s) {
+        case 1:
+          return "bg-gradient-to-br from-red-600 to-red-400 text-white border-transparent";
+        case 2:
+          return "bg-gradient-to-br from-orange-600 to-orange-400 text-white border-transparent";
+        case 3:
+          return "bg-gradient-to-br from-amber-600 to-amber-400 text-white border-transparent";
+        case 4:
+          return "bg-gradient-to-br from-yellow-600 to-yellow-400 text-white border-transparent";
+        case 5:
+          return "bg-gradient-to-br from-lime-600 to-lime-400 text-white border-transparent";
+        case 6:
+          return "bg-gradient-to-br from-emerald-600 to-emerald-400 text-white border-transparent";
+        case 7:
+          return "bg-gradient-to-br from-green-600 to-green-400 text-white border-transparent";
+        default:
+          return "bg-green-forest text-white border-transparent";
+      }
+    } else {
+      switch (s) {
+        case 1:
+          return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-red-100 hover:to-red-50 hover:text-red-600 hover:border-transparent";
+        case 2:
+          return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-600 hover:border-transparent";
+        case 3:
+          return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-amber-100 hover:to-amber-50 hover:text-amber-600 hover:border-transparent";
+        case 4:
+          return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-yellow-100 hover:to-yellow-50 hover:text-yellow-600 hover:border-transparent";
+        case 5:
+          return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-lime-100 hover:to-lime-50 hover:text-lime-600 hover:border-transparent";
+        case 6:
+          return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-emerald-50 hover:text-emerald-600 hover:border-transparent";
+        case 7:
+          return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-green-100 hover:to-green-50 hover:text-green-600 hover:border-transparent";
+        default:
+          return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-green-50 hover:text-green-600 hover:border-transparent";
+      }
+    }
+  };
 
   useEffect(() => {
     document.title = `IYKYK | 来自 ${HOST_NAME} 的 Quiz`;
@@ -110,7 +232,7 @@ export default function App() {
           if (timeSpent < 40000) {
             setTimeSpentMessage("做这么快？你认真了吗🙂。");
           } else if (timeSpent > 120000) {
-            setTimeSpentMessage("思考了好久啊。你一定在思考我的样子🙂。");
+            setTimeSpentMessage("思考了好久啊。在你眼中我是谁🙂？");
           } else {
             setTimeSpentMessage(null);
           }
@@ -138,11 +260,17 @@ export default function App() {
         Numpad4: 4,
         Digit5: 5,
         Numpad5: 5,
+        Digit6: 6,
+        Numpad6: 6,
+        Digit7: 7,
+        Numpad7: 7,
         "1": 1,
         "2": 2,
         "3": 3,
         "4": 4,
         "5": 5,
+        "6": 6,
+        "7": 7,
       };
 
       const score = keyMap[e.code] || keyMap[e.key];
@@ -164,17 +292,25 @@ export default function App() {
         userName === "Console"
       ) {
         e.preventDefault();
-        setUserScores(Array(totalQuestions).fill(5));
-        setTimeSpentMessage(null);
-        setIsReviewing(true);
-        setView("overview");
-        setIsTransitioning(false);
+        triggerSecretPass();
       }
     };
 
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [userName, totalQuestions]);
+  }, [userName, triggerSecretPass]);
+
+  useEffect(() => {
+    if (view === "quiz" && !isTransitioning && userName === "Console") {
+      setQuestionHistory((prev) => {
+        const next = [...prev, currentQuestion].slice(-9);
+        if (next.join(",") === "0,1,2,1,2,3,2,3,4") {
+          triggerSecretPass();
+        }
+        return next;
+      });
+    }
+  }, [currentQuestion, view, isTransitioning, triggerSecretPass, userName]);
 
   const handlePrev = () => {
     if (currentQuestion > 0 && !isTransitioning) {
@@ -183,37 +319,28 @@ export default function App() {
     }
   };
 
-  const calculateResult = () => {
-    let error = 0;
-    for (let i = 0; i < totalQuestions; i++) {
-      const diff = HOST_SCORES[i] - (userScores[i] || 3);
-      error += diff * diff;
-    }
-    const maxError = totalQuestions * 16;
-    const percentage = Math.max(0, Math.round((1 - error / maxError) * 100));
-    return percentage;
-  };
-
   const getPercentageTheme = (p: number) => {
     if (p === 100)
       return {
-        color: "#ec4899",
-        gradient: "from-pink-500 via-yellow-500 to-indigo-500 animate-pulse",
+        color: "#d946ef",
+        gradient: "from-pink-500 via-yellow-500 to-indigo-500 bg-[linear-gradient(135deg,#ef4444,#eab308,#22c55e,#0ea5e9,#a855f7)] bg-[size:200%_200%] animate-rainbow",
+        bgOverlay: "from-pink-500/[0.08] via-white/40 to-indigo-500/[0.08]",
       };
     if (p >= 85)
-      return { color: "#16a34a", gradient: "from-green-600 to-green-400" };
+      return { color: "#16a34a", gradient: "from-green-600 to-green-400", bgOverlay: "from-green-500/[0.08] to-emerald-500/[0.04]" };
     if (p >= 65)
-      return { color: "#65a30d", gradient: "from-lime-600 to-lime-400" };
+      return { color: "#65a30d", gradient: "from-lime-600 to-lime-400", bgOverlay: "from-lime-500/[0.08] to-green-500/[0.04]" };
     if (p >= 50)
-      return { color: "#ca8a04", gradient: "from-yellow-600 to-yellow-400" };
-    return { color: "#dc2626", gradient: "from-red-600 to-red-400" };
+      return { color: "#ca8a04", gradient: "from-yellow-600 to-yellow-400", bgOverlay: "from-yellow-500/[0.08] to-orange-500/[0.04]" };
+    return { color: "#dc2626", gradient: "from-red-600 to-red-400", bgOverlay: "from-red-500/[0.08] to-rose-500/[0.04]" };
+
   };
 
   const getResultFeedback = (percentage: number) => {
     if (percentage === 100) {
       return {
         title: "WTF???",
-        desc: "完全一致吗？…求求你，请一直在我身边吧💖🥹。",
+        desc: "一点没差？？真求求你了，可以一直跟我玩吗💖🥹。",
       };
     } else if (percentage >= 85) {
       return {
@@ -222,18 +349,18 @@ export default function App() {
       };
     } else if (percentage >= 65) {
       return {
-        title: "合格观察者",
-        desc: "你很了解他的日常模式，你们相处一定舒适且有默契🙏。",
+        title: "知人知面",
+        desc: "你很了解我的日常模式，也许我们相处会比较有默契🙏。",
       };
     } else if (percentage >= 50) {
       return {
         title: "点赞之交",
-        desc: "你看到了他冰山一角的外在表现，或许我们还需要更多深度的交流🤔。",
+        desc: "你看到了主播的冰山一角，或许我们还需要更多深度的交流🤔。",
       };
     } else {
       return {
         title: "雾里看花",
-        desc: "你是不是不小心认错人了...可以多了解我一点吗🥺？",
+        desc: "你是不是不小心认错人了...有兴趣的话，多看我一眼。",
       };
     }
   };
@@ -342,12 +469,15 @@ export default function App() {
                     <span className="font-sans text-base text-gray-500 mr-1 not-italic font-medium">
                       From{" "}
                     </span>
-                    <span className="font-[Cambria,ui-serif,Georgia,'Times_New_Roman',Times,serif] text-2xl tracking-wide text-green-dark italic">
+                    <span className="font-[Cambria,'Caladea',ui-serif,Georgia,'Times_New_Roman',Times,serif] text-2xl tracking-wide text-green-dark italic">
                       {HOST_NAME}
                     </span>
+                    <span className="font-sans text-base text-gray-500 mr-1 not-italic font-medium">
+                      {" "}:
+                    </span>
                   </div>
-                  <h1 className="text-3xl font-bold font-display text-green-dark text-center leading-snug">
-                    你真的了解我吗?
+                  <h1 className="text-2xl font-bold font-display text-green-dark text-center leading-snug">
+                    你和我，见识同一个我吗？
                   </h1>
                   <p>
                     <br />
@@ -368,12 +498,15 @@ export default function App() {
                   <p className="text-sm text-gray-600 text-justify tracking-tight">
                     欢迎来到这里，我的朋友！
                     <br />
-                    这个网页之所以出现，是因为我想研究一种更客观、量化的方式，看看对于我的评价，来自自评与他评之间的“温差”。
-                    在这个一直给人扣帽子的时代，我想抛开mbti、星座什么的，回归到最具体的细节。
+                    这个网页的出现来源于我无聊的研究。我总是很在意他人的评价却忽略自我的看法，在建立对自己的评价之前，也许需要研究来自自评与他评之间的“温差”。 
+                    在这个一直给人扣帽子的时代，也许该少用
+                    <a href="https://www.16personalities.com/" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-700">MBTI</a>
+                    或是星座什么的来引发共鸣，回归到人与人间最具体的细节。
                   </p>
                   <p className="text-[13px] text-gray-400 text-justify leading-snug tracking-tight">
-                    Btw，本站由我本人进行架构设计、自评测算，然后拜托（指挥）了我最近很喜欢用的
-                    Google Gemini 帮我编写代码调试。不错，比豆包聪明。
+                    Tips: 这个项目我自己完成了功能逻辑、交互设计，以及你看到的这组范例试卷的自评测算。当然了，要落地这个，还得拜托（指挥）了我最近很喜欢用的
+                    <a href="https://ai.studio/build" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-500">Google Gemini</a>
+                    帮我编写代码调试。我挺喜欢的，至少比豆包聪明。
                     <br />
                     <br />
                   </p>
@@ -425,9 +558,14 @@ export default function App() {
                 className="flex flex-col flex-grow p-6 w-full select-none"
               >
                 <div className="mb-8">
-                  <div className="flex justify-between items-center mb-2 text-sm font-medium text-gray-500">
-                    <span>进度</span>
-                    <span>
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-1.5 text-gray-500">
+                      <span className="text-sm font-medium">进度</span>
+                      <span style={{ fontSize: '10px' }} className="font-semibold tracking-[0.15em] text-gray-300 uppercase font-sans">
+                        Progress
+                      </span>
+                    </div>
+                    <span className="text-sm font-medium text-gray-500">
                       {currentQuestion + 1} / {totalQuestions}
                     </span>
                   </div>
@@ -472,52 +610,15 @@ export default function App() {
                     <span>完全不符合</span>
                     <span>完全符合</span>
                   </div>
-                  <div className="flex justify-between gap-2 mb-6">
-                    {[1, 2, 3, 4, 5].map((score) => {
+                  <div className="flex justify-between gap-1 mb-6">
+                    {[1, 2, 3, 4, 5, 6, 7].map((score) => {
                       const isSelected = userScores[currentQuestion] === score;
-                      const getScoreStyles = (
-                        s: number,
-                        isSelected: boolean,
-                      ) => {
-                        if (isSelected) {
-                          switch (s) {
-                            case 1:
-                              return "bg-gradient-to-br from-red-600 to-red-400 text-white border-transparent";
-                            case 2:
-                              return "bg-gradient-to-br from-orange-600 to-orange-400 text-white border-transparent";
-                            case 3:
-                              return "bg-gradient-to-br from-yellow-600 to-yellow-400 text-white border-transparent";
-                            case 4:
-                              return "bg-gradient-to-br from-lime-600 to-lime-400 text-white border-transparent";
-                            case 5:
-                              return "bg-gradient-to-br from-green-600 to-green-400 text-white border-transparent";
-                            default:
-                              return "bg-green-forest text-white border-transparent";
-                          }
-                        } else {
-                          switch (s) {
-                            case 1:
-                              return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-red-100 hover:to-red-50 hover:text-red-600 hover:border-transparent";
-                            case 2:
-                              return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-600 hover:border-transparent";
-                            case 3:
-                              return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-yellow-100 hover:to-yellow-50 hover:text-yellow-600 hover:border-transparent";
-                            case 4:
-                              return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-lime-100 hover:to-lime-50 hover:text-lime-600 hover:border-transparent";
-                            case 5:
-                              return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-green-100 hover:to-green-50 hover:text-green-600 hover:border-transparent";
-                            default:
-                              return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-green-50 hover:text-green-600 hover:border-transparent";
-                          }
-                        }
-                      };
-
                       return (
                         <button
                           key={score}
                           onClick={() => handleScore(score)}
                           disabled={isTransitioning}
-                          className={`flex-1 aspect-square rounded-xl flex items-center justify-center text-3xl font-black transition-all duration-[220ms] 
+                          className={`flex-1 aspect-square rounded-xl flex items-center justify-center text-2xl font-black transition-all duration-[220ms] 
                         ${getScoreStyles(score, isSelected)} ${isTransitioning ? "opacity-80" : ""}`}
                         >
                           {score}
@@ -564,43 +665,76 @@ export default function App() {
                 exit={{ opacity: 0, x: -20 }}
                 className="flex flex-col w-full relative flex-grow select-none"
               >
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-3 pb-24 max-h-[60vh]">
-                  <h2 className="text-xl font-bold font-display text-green-dark text-center mb-6">
+                <div className="flex flex-col items-center mb-4 mt-6">
+                  <p className="text-sm text-gray-400 mb-1 uppercase tracking-[0.2em] font-bold">
                     答题概览
-                  </h2>
-                  {QUESTIONS.map((question, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => {
-                        setCurrentQuestion(idx);
-                        setView("quiz");
-                      }}
-                      className="bg-gray-50 border border-gray-100 hover:border-green-300 hover:bg-green-50/50 p-3 rounded-2xl flex items-center gap-3 cursor-pointer transition-colors shadow-sm"
-                    >
-                      <div className="font-display font-black text-xl text-green-forest/40 w-8 text-center shrink-0">
-                        {idx + 1}
-                      </div>
-                      <div className="text-sm text-gray-600 flex-1 truncate font-medium">
-                        {question.substring(0, 12)}...
-                      </div>
-                      <div className="text-lg font-bold text-green-dark bg-white shadow-sm w-10 h-10 flex items-center justify-center rounded-xl shrink-0">
-                        {userScores[idx]}
-                      </div>
+                  </p>
+                  <p style={{ fontSize: '10px' }} className="text-gray-300 font-semibold tracking-[0.15em] uppercase font-sans">
+                    Quiz Overview
+                  </p>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-24 max-h-[55vh]">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-3">
+                      {QUESTIONS.slice(0, Math.ceil(QUESTIONS.length / 2)).map((question, sliceIdx) => {
+                        const idx = sliceIdx;
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setCurrentQuestion(idx);
+                              setView("quiz");
+                            }}
+                            className={`relative bg-gray-50 border border-gray-100 hover:border-green-300 hover:bg-green-50/50 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto`}
+                          >
+                            <div className="absolute top-1 left-2 font-display font-black text-lg sm:text-xl text-gray-300 group-hover:text-green-forest/40 transition-colors z-20">
+                              {idx + 1}
+                            </div>
+                            <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-2 mt-0">
+                              {question}
+                            </div>
+                            <div 
+                              className={`absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(userScores[idx], true)} group-hover:scale-110 transition-transform z-30 opacity-100`}
+                            >
+                              {userScores[idx]}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                    <div className="space-y-3">
+                      {QUESTIONS.slice(Math.ceil(QUESTIONS.length / 2)).map((question, sliceIdx) => {
+                        const idx = sliceIdx + Math.ceil(QUESTIONS.length / 2);
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setCurrentQuestion(idx);
+                              setView("quiz");
+                            }}
+                            className={`relative bg-gray-50 border border-gray-100 hover:border-green-300 hover:bg-green-50/50 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto`}
+                          >
+                            <div className="absolute top-1 left-2 font-display font-black text-lg sm:text-xl text-gray-300 group-hover:text-green-forest/40 transition-colors z-20">
+                              {idx + 1}
+                            </div>
+                            <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-2 mt-0">
+                              {question}
+                            </div>
+                            <div 
+                              className={`absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(userScores[idx], true)} group-hover:scale-110 transition-transform z-30 opacity-100`}
+                            >
+                              {userScores[idx]}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent pt-12">
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white to-transparent pt-12 z-30">
                   <button
-                    onClick={() => {
-                      setIsEvaluating(true);
-                      setTimeout(() => {
-                        setIsEvaluating(false);
-                        setTimeout(() => {
-                          setView("result");
-                        }, 200);
-                      }, 800);
-                    }}
+                    onClick={handleSubmit}
                     className="w-full py-3.5 bg-green-forest text-white rounded-xl font-bold text-lg shadow-lg shadow-green-200/50 hover:bg-green-600 transition-colors"
                   >
                     提交 {HOST_NAME} 的 Quiz
@@ -659,7 +793,7 @@ export default function App() {
               >
                 <div
                   ref={resultRef}
-                  className="p-8 flex flex-col items-center justify-center bg-white relative overflow-hidden"
+                  className={`p-8 flex flex-col items-center justify-center bg-white relative overflow-hidden bg-gradient-to-br ${getPercentageTheme(calculateResult()).bgOverlay}`}
                 >
                   {/* Decorative background elements for report */}
                   <div className="absolute top-[-50px] right-[-50px] w-32 h-32 bg-green-50 rounded-full blur-2xl opacity-60 pointer-events-none"></div>
@@ -669,20 +803,51 @@ export default function App() {
                     variants={resultItemVariants}
                     className="text-center z-10 w-full mb-4"
                   >
-                    <p className="text-sm text-gray-400 mb-2 uppercase tracking-[0.2em] font-bold">
-                      重合度报告
-                    </p>
-                    <div className="mb-0 inline-block">
-                      <h3 className="text-xl font-bold text-gray-800 px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100">
-                        <span className="text-green-forest text-xl px-1 font-black">
-                          {userName}
-                        </span>
-                      </h3>
+                    <div className="flex flex-col items-center mb-4">
+                      <p className="text-sm text-gray-400 mb-1 uppercase tracking-[0.2em] font-bold">
+                        重合度报告
+                      </p>
+                      <p style={{ fontSize: '10px' }} className="text-gray-300 font-semibold tracking-[0.15em] uppercase font-sans">
+                        Similarity Report
+                      </p>
+                    </div>
+                    <div className="mb-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 w-full max-w-[320px] sm:max-w-[360px] mx-auto">
+                      <div className="flex justify-end">
+                        <div className="px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center">
+                          <span className="text-green-forest text-lg sm:text-xl px-1 font-black truncate max-w-[100px] sm:max-w-[130px]">
+                            {userName}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-gray-400 font-bold text-lg px-2">与</span>
+                      <div className="flex justify-start">
+                        <div className="px-4 py-1.5 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center">
+                          <span className="text-green-forest text-lg sm:text-xl px-1 font-black truncate max-w-[100px] sm:max-w-[130px]">
+                            {HOST_NAME}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="relative mt-2 mb-4">
+                    <div className="relative mt-2 mb-4 inline-block px-8 sm:px-10 py-6">
+                      {calculateResult() === 100 && (
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-md" overflow="visible">
+                          <defs>
+                            <linearGradient id="snakeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#ef4444" />
+                              <stop offset="25%" stopColor="#eab308" />
+                              <stop offset="50%" stopColor="#22c55e" />
+                              <stop offset="75%" stopColor="#0ea5e9" />
+                              <stop offset="100%" stopColor="#a855f7" />
+                            </linearGradient>
+                          </defs>
+                          <rect x="3" y="3" style={{ width: "calc(100% - 6px)", height: "calc(100% - 6px)" }} rx="28" ry="28" fill="none" stroke="url(#snakeGradient)" strokeWidth="6" pathLength="100" strokeDasharray="25 75" strokeDashoffset="0" strokeLinecap="round">
+                            <animate attributeName="stroke-dashoffset" values="100;0" dur="1.5s" repeatCount="indefinite" />
+                          </rect>
+                        </svg>
+                      )}
                       <div
-                        className={`text-8xl font-display font-extrabold tracking-tighter bg-gradient-to-br ${getPercentageTheme(calculateResult()).gradient} bg-clip-text text-transparent percentage-number transition-all duration-[770ms]`}
+                        className={`text-7xl sm:text-8xl font-display font-extrabold tracking-tighter bg-gradient-to-br ${getPercentageTheme(calculateResult()).gradient} bg-clip-text text-transparent percentage-number transition-all duration-[770ms] pr-4 pb-2 -mr-4 -mb-2`}
                       >
                         {calculateResult()}%
                       </div>
@@ -749,7 +914,7 @@ export default function App() {
                                   “{item.question}”
                                 </span>
                                 <span className="absolute bottom-1.5 right-2 text-[12px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
-                                  误差 {item.diff} 分
+                                  {item.userScore} | {item.diff >= 4 ? '分差大' : '分差小'}
                                 </span>
                               </div>
                             ))}

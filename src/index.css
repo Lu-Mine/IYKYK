@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Outfit:wght@700;800&family=Noto+Serif+SC:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Outfit:wght@700;800&family=Noto+Serif+SC:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Caladea:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -9,6 +9,13 @@
   --color-green-forest: #4CAF50;
   --color-green-dark: #2E7D32;
   --color-gray-dark: #333333;
+
+  --animate-rainbow: rainbow 4s ease infinite;
+
+  @keyframes rainbow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
 }
 
 body {
@@ -19,6 +26,20 @@ body {
 
 button {
   user-select: none;
+}
+
+.bg-rainbow {
+  background-image: linear-gradient(135deg, #ef4444, #eab308, #22c55e, #3b82f6, #a855f7);
+}
+
+@layer components {
+  .link-underline {
+    @apply relative z-0 font-medium transition-colors duration-300 mx-0.5;
+    @apply after:content-[''] after:absolute after:-left-[1.5px] after:-bottom-[-0.8px] after:w-[calc(100%+3px)] after:h-[2px] after:bg-gray-300 after:rounded-full after:transition-colors after:duration-300 after:-z-10;
+  }
+  .link-underline:hover {
+    @apply text-green-dark after:bg-green-forest;
+  }
 }
 
 @layer utilities {

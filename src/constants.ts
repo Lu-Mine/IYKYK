@@ -1,7 +1,7 @@
-export const HOST_NAME = "Lumine";
+﻿export const HOST_NAME = "Lumine";
 
 export const HOST_SCORES = [
-  3, 4, 2, 2, 5, 4, 3, 4, 4, 5, 3, 3, 2, 2, 4, 3, 4, 2, 5, 4,
+  4, 5, 2, 3, 6, 5, 5, 6, 4, 6, 7, 2, 2, 2, 6, 3, 4, 2, 7, 6,
 ];
 
 export const QUESTIONS = [
