@@ -67,6 +67,7 @@ export default function App() {
   const [timeSpentMessage, setTimeSpentMessage] = useState<string | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isSkipped, setIsSkipped] = useState(false);
+  const [isInitialSnakeDone, setIsInitialSnakeDone] = useState(false);
 
   const isAIStudio = useMemo(() => {
     return window.location.hostname.includes("run.app") || window.location.hostname.includes("ai.studio") || window.location.hostname.includes("google");
@@ -77,11 +78,20 @@ export default function App() {
   const calculateResult = useCallback(() => {
     const scoreConfig = [100, 90, 60, 40, 30, 10, 0];
     let totalScore = 0;
+    let allMatches = true;
     for (let i = 0; i < totalQuestions; i++) {
       const diff = Math.abs((quizData.hostScores[i] || 4) - (userScores[i] || 4));
+      if (diff > 1) {
+        allMatches = false;
+      }
       const errorIndex = Math.min(Math.max(diff, 0), 6);
       totalScore += scoreConfig[errorIndex];
     }
+    
+    if (allMatches && userScores.length === totalQuestions) {
+      return 100;
+    }
+    
     return Math.round(totalScore / totalQuestions);
   }, [userScores, totalQuestions, quizData.hostScores]);
 
@@ -92,6 +102,7 @@ export default function App() {
       setIsEvaluating(false);
       const result = calculateResult();
       setTimeout(() => {
+        setIsInitialSnakeDone(false);
         setView("result");
         if (result === 100) {
           const duration = 3 * 1000;
@@ -121,6 +132,37 @@ export default function App() {
     }, 800);
   }, [userScores, totalQuestions, calculateResult]);
 
+  const triggerSecretPass = useCallback(() => {
+    setQuizData({
+      questions: QUESTIONS,
+      hostScores: HOST_SCORES,
+      hostName: HOST_NAME,
+    });
+    setUserScores([...HOST_SCORES]);
+    setTimeSpentMessage(null);
+    setIsReviewing(true);
+    setView("overview");
+    setIsTransitioning(false);
+    setIsSkipped(true);
+  }, []);
+
+  useEffect(() => {
+    let keys = "";
+    const handleKeyDownStr = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+         return; // Let the onChange handle it if they type in an input
+      }
+      keys += e.key.toLowerCase();
+      if (keys.length > 20) keys = keys.slice(-20);
+      if (keys.includes("ifyouknowyouknow")) {
+        triggerSecretPass();
+        keys = "";
+      }
+    };
+    window.addEventListener("keydown", handleKeyDownStr);
+    return () => window.removeEventListener("keydown", handleKeyDownStr);
+  }, [triggerSecretPass]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
@@ -144,39 +186,25 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [view, currentQuestion, userName, userScores, isTransitioning, handleSubmit]);
 
-  const triggerSecretPass = useCallback(() => {
-    setQuizData({
-      questions: QUESTIONS,
-      hostScores: HOST_SCORES,
-      hostName: HOST_NAME,
-    });
-    setUserScores([...HOST_SCORES]);
-    setTimeSpentMessage(null);
-    setIsReviewing(true);
-    setView("overview");
-    setIsTransitioning(false);
-    setIsSkipped(true);
-  }, []);
-
   const getScoreStyles = (s: number, isSelected: boolean) => {
     if (isSelected) {
       switch (s) {
         case 1:
-          return "bg-gradient-to-br from-red-600 to-red-400 text-white border-transparent";
+          return "bg-gradient-to-br from-red-600 to-red-400 text-white border border-transparent";
         case 2:
-          return "bg-gradient-to-br from-orange-600 to-orange-400 text-white border-transparent";
+          return "bg-gradient-to-br from-orange-600 to-orange-400 text-white border border-transparent";
         case 3:
-          return "bg-gradient-to-br from-amber-600 to-amber-400 text-white border-transparent";
+          return "bg-gradient-to-br from-amber-600 to-amber-400 text-white border border-transparent";
         case 4:
-          return "bg-gradient-to-br from-yellow-600 to-yellow-400 text-white border-transparent";
+          return "bg-gradient-to-br from-yellow-600 to-yellow-400 text-white border border-transparent";
         case 5:
-          return "bg-gradient-to-br from-lime-600 to-lime-400 text-white border-transparent";
+          return "bg-gradient-to-br from-lime-600 to-lime-400 text-white border border-transparent";
         case 6:
-          return "bg-gradient-to-br from-emerald-600 to-emerald-400 text-white border-transparent";
+          return "bg-gradient-to-br from-emerald-600 to-emerald-400 text-white border border-transparent";
         case 7:
-          return "bg-gradient-to-br from-green-600 to-green-400 text-white border-transparent";
+          return "bg-gradient-to-br from-green-600 to-green-400 text-white border border-transparent";
         default:
-          return "bg-green-forest text-white border-transparent";
+          return "bg-green-forest text-white border border-transparent";
       }
     } else {
       switch (s) {
@@ -306,27 +334,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [view, isTransitioning, handleScore]);
 
-  useEffect(() => {
-    const secretTrigger = () => {
-      triggerSecretPass();
-      return "Secret Pass Triggered!";
-    };
-    
-    (window as any)["If_you_know_you_know"] = secretTrigger;
-    (window as any)["IfYouKnowYouKnow"] = secretTrigger;
-    
-    Object.defineProperty(window, 'If you know you know', {
-      get: secretTrigger,
-      configurable: true
-    });
-
-    return () => {
-      delete (window as any)["If_you_know_you_know"];
-      delete (window as any)["IfYouKnowYouKnow"];
-      delete (window as any)["If you know you know"];
-    };
-  }, [triggerSecretPass]);
-
   const handlePrev = () => {
     if (currentQuestion > 0 && !isTransitioning) {
       setDirection(-1);
@@ -357,7 +364,7 @@ export default function App() {
         title: "WTF???",
         desc: "一点没差？？真求求你了，可以一直跟我玩吗💖🥹。",
       };
-    } else if (percentage >= 85) {
+    } else if (percentage >= 80) {
       return {
         title: "灵魂知己",
         desc: "你绝对不可以跟我绝交！求求你了！因为你要把我底裤扒没了😨。",
@@ -365,7 +372,7 @@ export default function App() {
     } else if (percentage >= 65) {
       return {
         title: "知人知面",
-        desc: "你很了解我的日常模式，也许我们相处会比较有默契🙏。",
+        desc: "你有点了解我的日常模式，也许我们相处会比较有默契🙏。",
       };
     } else if (percentage >= 50) {
       return {
@@ -434,6 +441,7 @@ export default function App() {
       setUserScores(savedResult.userScores);
       setTimeSpentMessage(savedResult.timeSpentMessage);
       setIsSkipped(savedResult.isSkipped);
+      setIsInitialSnakeDone(false);
       setView("result");
     }
   };
@@ -449,11 +457,11 @@ export default function App() {
           <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
       )}
-      <div className="my-auto relative w-full max-w-[480px]">
+      <div className="my-auto relative w-full max-w-[480px] max-h-full">
         <motion.div
           layout
           transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-          className="w-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col relative min-h-0"
+          className="w-full bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col relative min-h-0 max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-4rem)]"
         >
           <AnimatePresence mode="popLayout">
             {view === "home" && (
@@ -478,7 +486,7 @@ export default function App() {
                     },
                   },
                 }}
-                className="p-8 flex flex-col flex-grow justify-center w-full"
+                className="p-8 flex flex-col flex-grow justify-center w-full overflow-y-auto overflow-x-hidden custom-scrollbar"
               >
                 <motion.div
                   variants={{
@@ -588,11 +596,11 @@ export default function App() {
               <motion.div
                 layout
                 key="quiz"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10, transition: { duration: 0.17 } }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.17 } }}
                 transition={{ duration: 0.33 }}
-                className="flex flex-col flex-grow p-6 w-full select-none"
+                className="flex flex-col flex-grow p-6 w-full select-none overflow-y-auto overflow-x-hidden custom-scrollbar"
               >
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-2">
@@ -647,7 +655,7 @@ export default function App() {
                     <span>完全不符合</span>
                     <span>完全符合</span>
                   </div>
-                  <div className="flex justify-between gap-1 mb-6">
+                  <div className="flex flex-wrap justify-center sm:justify-between sm:flex-nowrap gap-1.5 sm:gap-1 mb-6 w-full px-1 sm:px-0">
                     {[1, 2, 3, 4, 5, 6, 7].map((score) => {
                       const isSelected = userScores[currentQuestion] === score;
                       return (
@@ -655,7 +663,7 @@ export default function App() {
                           key={score}
                           onClick={() => handleScore(score)}
                           disabled={isTransitioning}
-                          className={`flex-1 aspect-square rounded-xl flex items-center justify-center text-2xl font-black transition-all duration-[220ms] 
+                          className={`w-[22%] sm:w-auto sm:flex-1 aspect-square rounded-xl flex items-center justify-center text-2xl font-black transition-all duration-[220ms] box-border
                         ${getScoreStyles(score, isSelected)} ${isTransitioning ? "opacity-80" : ""}`}
                         >
                           {score}
@@ -676,17 +684,6 @@ export default function App() {
                       <ArrowLeft size={16} />
                       上一题
                     </button>
-
-                    {isReviewing ? (
-                      <div className="animate-in fade-in duration-[330ms] flex items-center gap-2 ml-auto">
-                        <button
-                          onClick={() => setView("overview")}
-                          className="flex items-center gap-1.5 text-sm font-medium transition-colors py-2 px-4 rounded-full text-white bg-green-forest hover:bg-green-700 shadow shadow-green-200"
-                        >
-                          确定
-                        </button>
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               </motion.div>
@@ -696,9 +693,10 @@ export default function App() {
               <motion.div
                 layout
                 key="overview"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.17 } }}
+                transition={{ duration: 0.33 }}
                 className="flex flex-col w-full relative flex-grow select-none"
               >
                 <div className="flex flex-col items-center mb-4 mt-6">
@@ -825,8 +823,9 @@ export default function App() {
                 initial="hidden"
                 animate="show"
                 exit="exit"
-                className="flex flex-col flex-grow w-full"
+                className="flex flex-col flex-grow w-full h-full min-h-0 overflow-hidden"
               >
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar w-full relative">
                 <div
                   ref={resultRef}
                   className={`p-8 flex flex-col items-center justify-center bg-white relative overflow-hidden bg-gradient-to-br ${getPercentageTheme(calculateResult()).bgOverlay}`}
@@ -866,8 +865,8 @@ export default function App() {
                     </div>
 
                     <div className="relative mt-2 mb-4 inline-block px-8 sm:px-10 py-6">
-                      {calculateResult() === 100 && (
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-md" overflow="visible">
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-md" overflow="visible">
+                        {calculateResult() === 100 && (
                           <defs>
                             <linearGradient id="snakeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                               <stop offset="0%" stopColor="#ef4444" />
@@ -877,11 +876,44 @@ export default function App() {
                               <stop offset="100%" stopColor="#a855f7" />
                             </linearGradient>
                           </defs>
-                          <rect x="3" y="3" style={{ width: "calc(100% - 6px)", height: "calc(100% - 6px)" }} rx="28" ry="28" fill="none" stroke="url(#snakeGradient)" strokeWidth="6" pathLength="100" strokeDasharray="25 75" strokeDashoffset="0" strokeLinecap="round">
-                            <animate attributeName="stroke-dashoffset" values="100;0" dur="1.5s" repeatCount="indefinite" />
-                          </rect>
-                        </svg>
-                      )}
+                        )}
+                        <motion.rect
+                          x="3"
+                          y="3"
+                          style={{ width: "calc(100% - 6px)", height: "calc(100% - 6px)" }}
+                          rx="28"
+                          ry="28"
+                          fill="none"
+                          stroke={calculateResult() === 100 ? "url(#snakeGradient)" : getPercentageTheme(calculateResult()).color}
+                          strokeWidth="6"
+                          pathLength="100"
+                          strokeDasharray="25 75"
+                          strokeLinecap="round"
+                          initial={{ strokeDashoffset: 100, opacity: 1 }}
+                          animate={
+                            calculateResult() === 100
+                              ? (isInitialSnakeDone
+                                  ? { strokeDashoffset: [100, 0] } // visually smooth loop
+                                  : { strokeDashoffset: 0 })
+                              : { strokeDashoffset: 0, opacity: [1, 1, 0] }
+                          }
+                          transition={
+                            calculateResult() === 100
+                              ? (isInitialSnakeDone
+                                  ? { repeat: Infinity, duration: 1.5, ease: "linear" }
+                                  : { duration: 1.5, ease: "easeOut" })
+                              : {
+                                  strokeDashoffset: { duration: 1.5, ease: "easeOut" },
+                                  opacity: { duration: 1.5, times: [0, 0.7, 1], ease: "linear" }
+                                }
+                          }
+                          onAnimationComplete={() => {
+                            if (calculateResult() === 100 && !isInitialSnakeDone) {
+                              setIsInitialSnakeDone(true);
+                            }
+                          }}
+                        />
+                      </svg>
                       <div
                         className={`text-7xl sm:text-8xl font-display font-extrabold tracking-tighter bg-gradient-to-br ${getPercentageTheme(calculateResult()).gradient} bg-clip-text text-transparent percentage-number transition-all duration-[770ms] pr-4 pb-2 -mr-4 -mb-2`}
                       >
@@ -1029,10 +1061,11 @@ export default function App() {
                     </div>
                   </motion.div>
                 </div>
+                </div>
 
                 <motion.div
                   variants={resultItemVariants}
-                  className="p-6 bg-gray-50 border-t border-gray-100 space-y-3 sticky bottom-0 z-20"
+                  className="p-6 bg-gray-50 border-t border-gray-100 space-y-3 flex-shrink-0 z-20 w-full"
                 >
                   <div className="flex gap-3">
                     <button
@@ -1059,6 +1092,7 @@ export default function App() {
         <AnimatePresence>
           {view === "home" && savedResult && (
             <motion.div 
+              key="home-recover"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
@@ -1077,6 +1111,7 @@ export default function App() {
 
           {view === "quiz" && currentQuestion === 0 && !isReviewing && (
             <motion.div 
+              key="quiz-recover"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
