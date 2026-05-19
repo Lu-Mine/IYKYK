@@ -9,6 +9,10 @@ interface OverviewViewProps {
   setCurrentQuestion: (index: number) => void;
   setView: (view: "quiz") => void;
   handleSubmit: () => void;
+  isReviewMode?: boolean;
+  respondentName?: string;
+  hostScores?: number[];
+  onBackToResults?: () => void;
 }
 
 export default function OverviewView({
@@ -18,6 +22,10 @@ export default function OverviewView({
   setCurrentQuestion,
   setView,
   handleSubmit,
+  isReviewMode,
+  respondentName,
+  hostScores,
+  onBackToResults,
 }: OverviewViewProps) {
   return (
     <motion.div
@@ -32,16 +40,22 @@ export default function OverviewView({
       <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="px-6 pb-6 relative min-h-full">
         <div className="flex flex-col items-center mb-4 mt-6">
           <p className="text-sm text-gray-400 mb-1 uppercase tracking-[0.2em] font-bold">
-            答题概览
+            {isReviewMode ? "作答详情" : "答题概览"}
           </p>
           <p style={{ fontSize: '10px' }} className="text-gray-300 font-semibold tracking-[0.15em] uppercase font-sans">
-            Quiz Overview
+            {isReviewMode ? "Response Details" : "Quiz Overview"}
           </p>
+          {isReviewMode && respondentName && (
+            <p className="mt-2 text-xs font-medium text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+              来自 <span className="font-bold underline">{respondentName}</span> 的答卷
+            </p>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-3">
             {questions.slice(0, Math.ceil(questions.length / 2)).map((question, sliceIdx) => {
               const idx = sliceIdx;
+              const diff = hostScores ? Math.abs(hostScores[idx] - userScores[idx]) : 0;
               return (
                 <div
                   key={idx}
@@ -54,7 +68,12 @@ export default function OverviewView({
                   <div className="absolute top-1 left-2 font-display font-black text-lg sm:text-xl text-gray-300 group-hover:text-green-forest/40 transition-colors z-20">
                     {idx + 1}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-2 mt-0">
+                  {isReviewMode && hostScores && (
+                    <div className="absolute top-1.5 right-2 text-[10px] sm:text-xs font-bold text-red-400 group-hover:text-red-500 transition-colors z-20">
+                      差 {diff} 分
+                    </div>
+                  )}
+                  <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-3 mt-0">
                     {question}
                   </div>
                   <div 
@@ -69,6 +88,7 @@ export default function OverviewView({
           <div className="space-y-3">
             {questions.slice(Math.ceil(questions.length / 2)).map((question, sliceIdx) => {
               const idx = sliceIdx + Math.ceil(questions.length / 2);
+              const diff = hostScores ? Math.abs(hostScores[idx] - userScores[idx]) : 0;
               return (
                 <div
                   key={idx}
@@ -81,7 +101,12 @@ export default function OverviewView({
                   <div className="absolute top-1 left-2 font-display font-black text-lg sm:text-xl text-gray-300 group-hover:text-green-forest/40 transition-colors z-20">
                     {idx + 1}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-2 mt-0">
+                  {isReviewMode && hostScores && (
+                    <div className="absolute top-1.5 right-2 text-[10px] sm:text-xs font-bold text-red-400 group-hover:text-red-500 transition-colors z-20">
+                      差 {diff} 分
+                    </div>
+                  )}
+                  <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-3 mt-0">
                     {question}
                   </div>
                   <div 
@@ -98,10 +123,10 @@ export default function OverviewView({
 
       <div className="p-6 bg-white/40 border-t border-white/40 flex-shrink-0 z-30 w-full backdrop-blur-md">
         <button
-          onClick={handleSubmit}
+          onClick={isReviewMode ? onBackToResults : handleSubmit}
           className="w-full py-3.5 bg-green-forest text-white rounded-xl font-bold text-lg shadow-lg shadow-green-200/50 hover:bg-green-600 transition-colors"
         >
-          提交 {hostName} 的 Quiz
+          {isReviewMode ? `完成查看 ${respondentName} 的答卷` : `提交 ${hostName} 的 Quiz`}
         </button>
       </div>
     </motion.div>

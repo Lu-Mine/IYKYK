@@ -52,8 +52,10 @@ export async function submitQuizResponse(payload: QuizSubmissionPayload): Promis
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to submit response');
+    const errorData = await response.json();
+    const error = new Error(errorData.error || 'Failed to submit response');
+    (error as any).debug = errorData.debug;
+    throw error;
   }
 
   const data = await response.json();

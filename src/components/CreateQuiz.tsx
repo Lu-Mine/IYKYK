@@ -38,15 +38,17 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
 
   const handleDebugFill = () => {
     if (!isAIStudio) return;
+    const debugName = "Debugger";
+    setHostName(debugName);
     setSecret("Lumine1234");
-    setQuestions(getRandomQuestions(PRESET_QUESTIONS, 10));
+    setQuestions(getRandomQuestions(PRESET_QUESTIONS, 10).map(q => q.replace(/他/g, debugName)));
     const randomScores = Array.from({ length: 10 }, () => Math.floor(Math.random() * 5) + 1);
     setHostScores(randomScores);
     setStep("overview");
   };
 
-  const [isPublishing, setIsPublishing] = useState(false);
   const [userid, setUserid] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const handleQuickStart = () => {
     if (!secret.trim()) return; // Validation is done in InfoView, but double check

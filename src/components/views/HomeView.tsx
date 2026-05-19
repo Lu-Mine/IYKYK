@@ -1,15 +1,24 @@
-import { motion } from "motion/react";
-import { Github, Edit2, Rocket } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Github, Edit2, Rocket, Users, ChevronRight, X, Loader2 } from "lucide-react";
 import { ScrollArea } from "../ui/ScrollArea";
+import ReactMarkdown from "react-markdown";
 
 interface HomeViewProps {
   hostName: string;
+  title: string;
+  userId?: string;
+  description?: string;
   userName: string;
   setUserName: (val: string) => void;
   handleStart: () => void;
+  onViewResults?: (secret: string) => Promise<void>;
+  isLoadingResults?: boolean;
 }
 
-export function HomeGreenWindow({ commitHash, delay = 0.4 }: { commitHash: string, delay?: number }) {
+export function HomeGreenWindow({ commitHash, delay = 0.4, userId }: { commitHash: string, delay?: number, userId?: string }) {
+  const formattedUserId = userId ? userId.split('.')[0] : "Lumine";
+
   return (
     <motion.div
       key="sub-window"
@@ -22,7 +31,7 @@ export function HomeGreenWindow({ commitHash, delay = 0.4 }: { commitHash: strin
       <div className="flex-1 bg-[#e6ebd9]/70 backdrop-blur-xl rounded-t-3xl shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.1)] border border-white/30 px-6 leading-none block pointer-events-auto">
         <div className="h-[2.5rem] flex justify-between items-center">
           <span className="translate-y-[1.5px] font-cinzel text-[14px] font-semibold text-[#8b9183] tracking-normal select-none flex items-center">
-            Powered by Lumine
+            Powered by {formattedUserId}
           </span>
           <a
             href="https://github.com/Lu-Mine/IYKYK"
@@ -41,7 +50,33 @@ export function HomeGreenWindow({ commitHash, delay = 0.4 }: { commitHash: strin
   );
 }
 
-export default function HomeView({ hostName, userName, setUserName, handleStart, onEnterCreateMode }: HomeViewProps & { onEnterCreateMode?: () => void }) {
+export default function HomeView({ 
+  hostName, 
+  title, 
+  userId,
+  description,
+  userName, 
+  setUserName, 
+  handleStart, 
+  onEnterCreateMode,
+  onViewResults,
+  isLoadingResults
+}: HomeViewProps & { onEnterCreateMode?: () => void }) {
+  const [showSecretModal, setShowSecretModal] = useState(false);
+  const [secret, setSecret] = useState("");
+  const [secretError, setSecretError] = useState("");
+
+  const handleSecretSubmit = async () => {
+    if (!secret.trim() || !onViewResults) return;
+    setSecretError("");
+    try {
+      await onViewResults(secret);
+      setShowSecretModal(false);
+    } catch (err: any) {
+      setSecretError(err.message || "密语验证失败");
+    }
+  };
+
   return (
     <motion.div
       layout
@@ -104,7 +139,7 @@ export default function HomeView({ hostName, userName, setUserName, handleStart,
               </span>
             </div>
             <h1 className="text-2xl font-bold font-display text-green-dark text-center leading-snug">
-              你和我，见识同一个我吗？
+              {title}
             </h1>
           </motion.div>
           
@@ -120,15 +155,21 @@ export default function HomeView({ hostName, userName, setUserName, handleStart,
             }}
             className="leading-relaxed space-y-6"
           >
-            <p className="text-sm text-gray-600 text-justify tracking-tight">
-              欢迎来到这里！
-              <br />
-              这个网页被创建的原因，来源于我的困扰：我总是很在意他人的评价，然后忽略自我的看法。我考虑到，想正确客观建立对自己的评价，也许需要看看自评与他评之间的“温差”。
-              <br />
-              在这个一直给人扣帽子的时代，我推崇少用
-              <a href="https://www.16personalities.com/" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-700">MBTI</a>
-              或是星座什么的来引发共鸣，而是回归到人与人间最具体的细节里面找共识。
-            </p>
+            {description ? (
+              <div className="text-sm text-gray-600 text-justify tracking-tight description-content">
+                <ReactMarkdown>{description}</ReactMarkdown>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600 text-justify tracking-tight">
+                欢迎来到这里！
+                <br />
+                这个网页被创建的原因，来源于我的困扰：我总是很在意他人的评价，然后忽略自我的看法。我考虑到，想正确客观建立对自己的评价，也许需要看看自评与他评之间的“温差”。
+                <br />
+                在这个一直给人扣帽子的时代，我推崇少用
+                <a href="https://www.16personalities.com/" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-700">MBTI</a>
+                或是星座什么的来引发共鸣，而是回归到人与人间最具体的细节里面找共识。
+              </p>
+            )}
 
             <blockquote className="mb-6 border-l-[3px] border-green-forest/40 bg-green-forest/5 rounded-r-md px-3 py-2 my-2 text-sm text-gray-800 text-justify tracking-tight">
               <b>这个 Quiz 的意义在于比较：</b>
@@ -139,12 +180,6 @@ export default function HomeView({ hostName, userName, setUserName, handleStart,
               </div>
               <div className="items-center"> 这样就能知道我心目中的自己和你眼里的我有怎样的差距。 </div>
             </blockquote>
-
-            <p className="text-[13px] text-gray-400 text-justify leading-snug tracking-tight">
-              Tips: 这个项目我自己完成了功能逻辑、交互设计，以及你看到的这组范例试卷的自评测算。当然了，要落地这个，还得拜托（指挥）我最近很喜欢用的
-              <a href="https://ai.studio/build" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-500">Google Gemini</a>
-              帮我编写代码调试。我挺喜欢的，至少比豆包聪明。
-            </p>
           </motion.div>
         </div>
       </ScrollArea>
@@ -181,7 +216,78 @@ export default function HomeView({ hostName, userName, setUserName, handleStart,
         >
           <Rocket size={20} /> 开始挑战
         </button>
+
+        <button
+          onClick={() => setShowSecretModal(true)}
+          className="w-full bg-[#ecfdf5] hover:bg-green-50 text-green-700 font-bold text-sm py-2.5 rounded-xl transition-all border border-green-100 flex items-center justify-center gap-2 mt-1"
+        >
+          <Users size={16} /> 查看好友答题
+        </button>
       </motion.div>
+
+      {/* Secret Word Modal */}
+      <AnimatePresence>
+        {showSecretModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/20 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-gray-800">密语验证</h3>
+                  <button 
+                    onClick={() => { setShowSecretModal(false); setSecret(""); setSecretError(""); }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mb-6">请输入这套试卷的密语，以查看其他人的答题记录。</p>
+                
+                <div className="space-y-4">
+                  <div className="relative">
+                    <input
+                      type="password"
+                      placeholder="输入密语"
+                      className={`w-full px-4 py-3 rounded-xl bg-gray-50 border transition-all focus:outline-none text-center ${
+                        secretError ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
+                      }`}
+                      value={secret}
+                      onChange={(e) => { setSecret(e.target.value); setSecretError(""); }}
+                      onKeyDown={(e) => e.key === "Enter" && handleSecretSubmit()}
+                    />
+                    {secretError && (
+                      <p className="text-[10px] text-red-500 mt-1.5 ml-1 text-center font-medium">{secretError}</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleSecretSubmit}
+                    disabled={!secret.trim() || isLoadingResults}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    {isLoadingResults ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <>
+                        验证并查看 <ChevronRight size={18} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

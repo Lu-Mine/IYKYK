@@ -4,14 +4,15 @@ import { ArrowLeft, Home, Rocket, Edit2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { HOST_NAME, HOST_SCORES, QUESTIONS } from "./lib/constants";
 import { calculateResultScore } from "./lib/quizUtils";
-import { submitQuizResponse, fetchQuiz } from "./lib/api";
+import { submitQuizResponse, fetchQuiz, fetchResults } from "./lib/api";
 import HomeView, { HomeGreenWindow } from "./components/views/HomeView";
 import QuizView from "./components/views/QuizView";
 import OverviewView from "./components/views/OverviewView";
 import ResultView from "./components/views/ResultView";
 import CreateQuiz from "./components/CreateQuiz";
+import ResultsListView from "./components/views/ResultsListView";
 
-type ViewState = "home" | "quiz" | "overview" | "result";
+type ViewState = "home" | "quiz" | "overview" | "result" | "resultsList";
 
 const WaveBackground = ({ active }: { active: boolean }) => {
   return (
@@ -106,7 +107,14 @@ export default function App() {
     questions: QUESTIONS,
     hostScores: HOST_SCORES,
     hostName: HOST_NAME,
+    userId: "",
+    title: "你和我，见识同一个我吗？",
+    description: "",
   });
+  const [results, setResults] = useState<any[]>([]);
+  const [reviewResult, setReviewResult] = useState<any>(null);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const [resultsError, setResultsError] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userScores, setUserScores] = useState<number[]>([]);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -170,7 +178,10 @@ export default function App() {
           setQuizData({
             questions: data.questions || QUESTIONS,
             hostScores: data.hostScores || HOST_SCORES,
-            hostName: data.hostName || data.title || HOST_NAME,
+            hostName: data.hostName || HOST_NAME,
+            userId: data.userId || "",
+            title: data.title || "你和我，见识同一个我吗？",
+            description: data.description || "",
           });
         })
         .catch((err) => {
@@ -221,6 +232,14 @@ export default function App() {
       
       quizId = quizId || 'default_quiz';
       
+      console.log('Submitting response:', {
+        quizId,
+        participantName: userName,
+        participantScores: userScores,
+        scoresLength: userScores.length,
+        totalQuestions
+      });
+      
       await submitQuizResponse({
         quizId,
         participantName: userName,
@@ -228,8 +247,11 @@ export default function App() {
         createdAt: new Date().toISOString(),
         deviceInfo: navigator.userAgent
       });
-    } catch (error) {
-      console.error('Failed to submit response to backend:', error);
+    } catch (error: any) {
+      console.error('Failed to submit response to backend:', error.message);
+      if (error.debug) {
+        console.error('Debug info:', error.debug);
+      }
     }
 
     setTimeout(() => {
@@ -264,14 +286,18 @@ export default function App() {
         }
       }, 200);
     }, 800);
-  }, [userScores, totalQuestions, calculateResult]);
+  }, [userScores, totalQuestions, calculateResult, userName]);
 
   const triggerSecretPass = useCallback(() => {
     setQuizData({
       questions: QUESTIONS,
       hostScores: HOST_SCORES,
       hostName: HOST_NAME,
+      userId: "debug.local",
+      title: "你和我，见识同一个我吗？",
+      description: "这是调试模式下的默认试卷描述。",
     });
+    setUserName("Debugger");
     setUserScores([...HOST_SCORES]);
     setTimeSpentMessage(null);
     setIsReviewing(true);
@@ -324,10 +350,10 @@ export default function App() {
     document.title = `IYKYK | 来自 ${quizData.hostName} 的 Quiz`;
   }, [quizData.hostName]);
 
-  const handleStart = () => {
-    if (!userName.trim()) return;
+  const handleStart = (mode: ViewState = "quiz") => {
+    if (!userName.trim() && mode === "quiz") return;
 
-    setView("quiz");
+    setView(mode);
     setCurrentQuestion(0);
     setUserScores([]);
     setSavedResult(null);
@@ -412,6 +438,34 @@ export default function App() {
       setDirection(-1);
       setCurrentQuestion((prev) => prev - 1);
     }
+  };
+
+  const handleViewResults = async (secret: string) => {
+    setIsLoadingResults(true);
+    setResultsError(null);
+    try {
+      const path = window.location.pathname;
+      let quizId = 'default_quiz';
+      if (path.includes('/customquiz/')) {
+        quizId = path.split('/customquiz/')[1];
+      }
+      const data = await fetchResults(quizId, secret);
+      setResults(data.results || []);
+      setView("resultsList");
+    } catch (err: any) {
+      console.error('Fetch results failed:', err);
+      setResultsError(err.message || '获取记录失败');
+      throw err;
+    } finally {
+      setIsLoadingResults(false);
+    }
+  };
+
+  const handleReviewResponse = (record: any) => {
+    setReviewResult(record);
+    setUserScores(record.participantScores);
+    setIsReviewing(true);
+    setView("overview");
   };
 
   const resetToHome = () => {
@@ -537,13 +591,26 @@ export default function App() {
                     </div>
                   ) : (
                     <AnimatePresence mode="popLayout">
-                      {view === "home" && (
+                  {view === "home" && (
                     <HomeView 
                       hostName={quizData.hostName} 
+                      title={quizData.title}
+                      userId={quizData.userId}
+                      description={quizData.description}
                       userName={userName} 
                       setUserName={setUserName} 
                       handleStart={handleStart}
                       onEnterCreateMode={() => { hasSwitchedMode.current = true; setIsCreatingMode(true) }}
+                      onViewResults={handleViewResults}
+                      isLoadingResults={isLoadingResults}
+                    />
+                  )}
+
+                  {view === "resultsList" && (
+                    <ResultsListView 
+                      results={results}
+                      onBack={() => setView("home")}
+                      onReview={handleReviewResponse}
                     />
                   )}
 
@@ -557,6 +624,9 @@ export default function App() {
                       isTransitioning={isTransitioning}
                       handleScore={handleScore}
                       handlePrev={handlePrev}
+                      isReviewMode={!!reviewResult}
+                      correctScores={quizData.hostScores}
+                      onBackToOverview={() => setView("overview")}
                     />
                   )}
 
@@ -568,6 +638,14 @@ export default function App() {
                       setCurrentQuestion={setCurrentQuestion}
                       setView={setView}
                       handleSubmit={handleSubmit}
+                      isReviewMode={!!reviewResult}
+                      respondentName={reviewResult?.participantName}
+                      hostScores={quizData.hostScores}
+                      onBackToResults={() => {
+                        setReviewResult(null);
+                        setUserScores([]);
+                        setView("resultsList");
+                      }}
                     />
                   )}
 

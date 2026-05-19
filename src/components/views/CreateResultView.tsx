@@ -60,7 +60,7 @@ export default function CreateResultView({ hostName, secret, title, description,
               // html2canvas doesn't support backdrop-filter either, so we disable it in the clone
               if (htmlEl.style) {
                 htmlEl.style.backdropFilter = 'none';
-                htmlEl.style.webkitBackdropFilter = 'none';
+                (htmlEl.style as any).webkitBackdropFilter = 'none';
               }
             });
 

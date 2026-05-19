@@ -5,10 +5,30 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  console.log('Incoming submission body:', {
+    type: typeof req.body,
+    isObject: typeof req.body === 'object' && req.body !== null,
+    keys: req.body ? Object.keys(req.body) : [],
+    body: req.body
+  });
+
   const { quizId, participantName, participantScores, createdAt, deviceInfo } = req.body;
 
   if (!quizId || !participantName || !participantScores) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    console.error('Submission failed. Missing fields:', {
+      quizId: !!quizId,
+      participantName: !!participantName,
+      participantScores: !!participantScores,
+      body: req.body
+    });
+    return res.status(400).json({ 
+      error: 'Missing required fields', 
+      debug: { 
+        hasQuizId: !!quizId, 
+        hasParticipantName: !!participantName, 
+        hasParticipantScores: !!participantScores 
+      } 
+    });
   }
 
   try {
