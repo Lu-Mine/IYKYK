@@ -10,18 +10,25 @@ export default async function handler(req: any, res: any) {
 
   try {
     // Verify secret
-    let quizData: any = await kv.get(`quiz:${quizId}`);
+    let quizData: any = null;
     
-    if (!quizData) {
-      return res.status(404).json({ error: 'Quiz not found' });
-    }
+    if (quizId === 'default_quiz') {
+      // Default identity for the built-in quiz
+      quizData = { secret: 'IfYouKnowYouKnow' };
+    } else {
+      quizData = await kv.get(`quiz:${quizId}`);
+      
+      if (!quizData) {
+        return res.status(404).json({ error: 'Quiz not found' });
+      }
 
-    // Handle case where data might be stored as a string
-    if (typeof quizData === 'string') {
-      try {
-        quizData = JSON.parse(quizData);
-      } catch (e) {
-        console.error('Failed to parse quiz data string:', e);
+      // Handle case where data might be stored as a string
+      if (typeof quizData === 'string') {
+        try {
+          quizData = JSON.parse(quizData);
+        } catch (e) {
+          console.error('Failed to parse quiz data string:', e);
+        }
       }
     }
 

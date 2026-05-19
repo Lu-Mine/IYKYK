@@ -210,7 +210,7 @@ export default function HomeView({
           onKeyDown={(e) => e.key === "Enter" && handleStart()}
         />
         <button
-          onClick={handleStart}
+          onClick={() => handleStart()}
           disabled={!userName.trim()}
           className="w-full bg-green-forest hover:bg-green-dark text-white font-bold text-lg py-3 rounded-xl transition-all shadow-md shadow-green-200/50 disabled:shadow-none disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >

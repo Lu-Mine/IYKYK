@@ -150,9 +150,17 @@ export default function App() {
   useEffect(() => {
     const path = window.location.pathname;
     const match = path.match(/\/customquiz\/([^/?#]+)/);
-    
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchId = urlParams.get('id');
+
+    let quizId: string | null = null;
     if (match && match[1]) {
-      const quizId = decodeURIComponent(match[1]);
+      quizId = decodeURIComponent(match[1]);
+    } else if (searchId) {
+      quizId = searchId;
+    }
+    
+    if (quizId) {
       console.log('[App] Custom quiz URL detected. ID:', quizId);
       setIsLoadingQuiz(true);
       setQuizLoadError(null);
@@ -200,9 +208,9 @@ export default function App() {
           setIsLoadingQuiz(false);
         });
     } else {
-      console.log('[App] No custom quiz ID in path:', path);
+      console.log('[App] No custom quiz ID in path or parameters');
     }
-  }, [window.location.pathname]);
+  }, [window.location.pathname, window.location.search]);
 
   const isAIStudio = useMemo(() => {
     return window.location.hostname.includes("run.app") || window.location.hostname.includes("ai.studio") || window.location.hostname.includes("google");
@@ -293,7 +301,7 @@ export default function App() {
       questions: QUESTIONS,
       hostScores: HOST_SCORES,
       hostName: HOST_NAME,
-      userId: "debug.local",
+      userId: "Lumine.local",
       title: "你和我，见识同一个我吗？",
       description: "这是调试模式下的默认试卷描述。",
     });
@@ -350,10 +358,14 @@ export default function App() {
     document.title = `IYKYK | 来自 ${quizData.hostName} 的 Quiz`;
   }, [quizData.hostName]);
 
-  const handleStart = (mode: ViewState = "quiz") => {
-    if (!userName.trim() && mode === "quiz") return;
+  const handleStart = (mode: ViewState | React.MouseEvent | any = "quiz") => {
+    const targetMode = (typeof mode === "string" && ["home", "quiz", "overview", "result", "resultsList"].includes(mode)) 
+      ? mode as ViewState 
+      : "quiz";
 
-    setView(mode);
+    if (!userName.trim() && targetMode === "quiz") return;
+
+    setView(targetMode);
     setCurrentQuestion(0);
     setUserScores([]);
     setSavedResult(null);

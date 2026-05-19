@@ -110,6 +110,24 @@ export default function CreateQuestionView({
 
   const hasAtLeastOneValidQuestion = questions.some((q, i) => q.trim() !== '' && hostScores[i] !== 0);
 
+  const slideVariants = {
+    initial: (d: number) => ({
+      opacity: 0,
+      x: d === 1 ? 50 : -50,
+      filter: "blur(5px)"
+    }),
+    animate: {
+      opacity: 1,
+      x: 0,
+      filter: "blur(0px)"
+    },
+    exit: (d: number) => ({
+      opacity: 0,
+      x: d === 1 ? -50 : 50,
+      filter: "blur(5px)"
+    })
+  };
+
   return (
     <>
       <AnimatePresence mode="popLayout" custom={direction}>
@@ -117,9 +135,10 @@ export default function CreateQuestionView({
           layout
           key={`create_q_${currentQuestionIndex}`}
           custom={direction}
-          initial={(d: number) => ({ opacity: 0, x: d === 1 ? 50 : -50, filter: "blur(5px)" })}
-          animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-          exit={(d: number) => ({ opacity: 0, x: d === 1 ? -50 : 50, filter: "blur(5px)" })}
+          variants={slideVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
           transition={{ duration: 0.35, ease: "easeInOut" }}
           className="flex flex-col flex-1 w-full min-h-0 overflow-hidden relative"
         >

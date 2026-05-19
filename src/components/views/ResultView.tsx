@@ -12,7 +12,7 @@ const resultContainerVariants = {
     scale: 1,
     transition: {
       duration: 0.44,
-      type: "spring",
+      type: "spring" as const,
       bounce: 0.2,
       staggerChildren: 0.1,
       delayChildren: 0.2,
@@ -27,7 +27,7 @@ const resultItemVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 300,
       damping: 24,
     },
