@@ -21,7 +21,10 @@ export default function CreateResultView({ hostName, secret, title, description,
   const posterRef = useRef<HTMLDivElement>(null);
   const [posterTitle, setPosterTitle] = useState("从我的试卷里，懂我。");
   const [copied, setCopied] = useState(false);
-  const shareUrl = userid ? `https://iykyk.xlumi.cn/customquiz/${userid}` : 'https://iykyk.xlumi.cn/';
+  const shareUrl = useMemo(() => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://iykyk.xlumi.cn';
+    return userid ? `${origin}/customquiz/${userid}` : `${origin}/`;
+  }, [userid]);
 
   const handleCopy = async () => {
     try {

@@ -14,6 +14,11 @@ async function startServer() {
   app.use(express.json());
 
   // API routes
+  app.use('/api', (req, res, next) => {
+    console.log(`[API] ${req.method} ${req.url}`);
+    next();
+  });
+
   app.post('/api/create-quiz', async (req, res) => {
     try {
       await (createQuizHandler as any)(req, res);

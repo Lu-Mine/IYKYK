@@ -21,6 +21,7 @@ export default async function handler(req: any, res: any) {
       deviceInfo,
     };
 
+    // Explicitly stringify for Redis LPUSH
     await kv.lpush(`responses:${quizId}`, JSON.stringify(submission));
 
     return res.status(200).json({ status: 'success', responseId });

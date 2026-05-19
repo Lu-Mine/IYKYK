@@ -23,6 +23,7 @@ export default async function handler(req: any, res: any) {
       secret,
     };
 
+    // Explicitly stringify for Redis SET
     await kv.set(`quiz:${userId}`, JSON.stringify(quizData));
 
     return res.status(200).json({ message: 'Quiz saved successfully', userId });

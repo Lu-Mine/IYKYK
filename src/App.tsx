@@ -141,27 +141,57 @@ export default function App() {
 
   useEffect(() => {
     const path = window.location.pathname;
-    if (path.includes('/customquiz/')) {
-      const quizId = path.split('/customquiz/')[1];
-      if (quizId) {
-        setIsLoadingQuiz(true);
-        fetchQuiz(quizId)
-          .then((data) => {
-            setQuizData({
-              questions: data.questions || QUESTIONS,
-              hostScores: data.hostScores || HOST_SCORES,
-              hostName: data.hostName || data.title || HOST_NAME, // Fallback to title if hostName not present
-            });
-            setIsLoadingQuiz(false);
-          })
-          .catch((err) => {
-            console.error('Failed to load custom quiz:', err);
-            setQuizLoadError(err.message === 'QUIZ_NOT_FOUND' ? '该试卷不存在或已被移除' : '加载试卷失败，请稍后重试');
-            setIsLoadingQuiz(false);
+    const match = path.match(/\/customquiz\/([^/?#]+)/);
+    
+    if (match && match[1]) {
+      const quizId = decodeURIComponent(match[1]);
+      console.log('[App] Custom quiz URL detected. ID:', quizId);
+      setIsLoadingQuiz(true);
+      setQuizLoadError(null);
+
+      // Add a safety timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        if (isLoadingQuiz) {
+          console.warn('[App] Quiz loading timed out after 10s');
+          setQuizLoadError('加载超时，请检查网络或刷新重试');
+          setIsLoadingQuiz(false);
+        }
+      }, 10000);
+
+      fetchQuiz(quizId)
+        .then((data) => {
+          clearTimeout(timeoutId);
+          console.log('[App] Quiz fetch successful for host:', data.hostName || data.title);
+          
+          if (!data || (!data.questions && !data.title)) {
+            throw new Error('INVALID_DATA');
+          }
+
+          setQuizData({
+            questions: data.questions || QUESTIONS,
+            hostScores: data.hostScores || HOST_SCORES,
+            hostName: data.hostName || data.title || HOST_NAME,
           });
-      }
+        })
+        .catch((err) => {
+          clearTimeout(timeoutId);
+          console.error('[App] Quiz fetch failed:', err);
+          if (err.message === 'QUIZ_NOT_FOUND') {
+            setQuizLoadError('该试卷不存在或已被移除');
+          } else if (err.message === 'INVALID_DATA') {
+            setQuizLoadError('试卷数据损坏，无法加载');
+          } else {
+            setQuizLoadError('加载试卷失败，请稍后重试');
+          }
+        })
+        .finally(() => {
+          console.log('[App] Quiz loading sequence finished');
+          setIsLoadingQuiz(false);
+        });
+    } else {
+      console.log('[App] No custom quiz ID in path:', path);
     }
-  }, []);
+  }, [window.location.pathname]);
 
   const isAIStudio = useMemo(() => {
     return window.location.hostname.includes("run.app") || window.location.hostname.includes("ai.studio") || window.location.hostname.includes("google");

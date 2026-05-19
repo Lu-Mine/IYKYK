@@ -64,7 +64,7 @@ export async function submitQuizResponse(payload: QuizSubmissionPayload): Promis
  * 从 Vercel Serverless API 获取试卷内容
  */
 export async function fetchQuiz(quizId: string) {
-  const response = await fetch(`/api/get-quiz?quizId=${quizId}`);
+  const response = await fetch(`/api/get-quiz?quizId=${encodeURIComponent(quizId)}`);
 
   if (!response.ok) {
     if (response.status === 404) {
@@ -81,7 +81,7 @@ export async function fetchQuiz(quizId: string) {
  * 获取试卷的所有回答（需要密语）
  */
 export async function fetchResults(quizId: string, secret: string) {
-  const response = await fetch(`/api/results?quizId=${quizId}&secret=${secret}`);
+  const response = await fetch(`/api/results?quizId=${encodeURIComponent(quizId)}&secret=${encodeURIComponent(secret)}`);
 
   if (!response.ok) {
     const error = await response.json();
