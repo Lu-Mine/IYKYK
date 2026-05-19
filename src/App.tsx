@@ -2,8 +2,9 @@ import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import confetti from "canvas-confetti";
 import { ArrowLeft, Home, Rocket, Edit2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { HOST_NAME, HOST_SCORES, QUESTIONS } from "./constants";
+import { HOST_NAME, HOST_SCORES, QUESTIONS } from "./lib/constants";
 import { calculateResultScore } from "./lib/quizUtils";
+import { submitQuizResponse, fetchQuiz } from "./lib/api";
 import HomeView, { HomeGreenWindow } from "./components/views/HomeView";
 import QuizView from "./components/views/QuizView";
 import OverviewView from "./components/views/OverviewView";
@@ -122,6 +123,8 @@ export default function App() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isSkipped, setIsSkipped] = useState(false);
   const [isInitialSnakeDone, setIsInitialSnakeDone] = useState(false);
+  const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
+  const [quizLoadError, setQuizLoadError] = useState<string | null>(null);
 
   const [commitHash, setCommitHash] = useState("main");
 
@@ -136,6 +139,30 @@ export default function App() {
       .catch(console.error);
   }, []);
 
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.includes('/customquiz/')) {
+      const quizId = path.split('/customquiz/')[1];
+      if (quizId) {
+        setIsLoadingQuiz(true);
+        fetchQuiz(quizId)
+          .then((data) => {
+            setQuizData({
+              questions: data.questions || QUESTIONS,
+              hostScores: data.hostScores || HOST_SCORES,
+              hostName: data.hostName || data.title || HOST_NAME, // Fallback to title if hostName not present
+            });
+            setIsLoadingQuiz(false);
+          })
+          .catch((err) => {
+            console.error('Failed to load custom quiz:', err);
+            setQuizLoadError(err.message === 'QUIZ_NOT_FOUND' ? '该试卷不存在或已被移除' : '加载试卷失败，请稍后重试');
+            setIsLoadingQuiz(false);
+          });
+      }
+    }
+  }, []);
+
   const isAIStudio = useMemo(() => {
     return window.location.hostname.includes("run.app") || window.location.hostname.includes("ai.studio") || window.location.hostname.includes("google");
   }, []);
@@ -146,9 +173,35 @@ export default function App() {
     return calculateResultScore(userScores, quizData.hostScores, totalQuestions);
   }, [userScores, totalQuestions, quizData.hostScores]);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (userScores.length !== totalQuestions || userScores.some((s) => s === undefined)) return;
     setIsEvaluating(true);
+    
+    // Attempt backend submission
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      let quizId = urlParams.get('id');
+      
+      if (!quizId) {
+        const path = window.location.pathname;
+        if (path.includes('/customquiz/')) {
+          quizId = path.split('/customquiz/')[1];
+        }
+      }
+      
+      quizId = quizId || 'default_quiz';
+      
+      await submitQuizResponse({
+        quizId,
+        participantName: userName,
+        participantScores: userScores,
+        createdAt: new Date().toISOString(),
+        deviceInfo: navigator.userAgent
+      });
+    } catch (error) {
+      console.error('Failed to submit response to backend:', error);
+    }
+
     setTimeout(() => {
       setIsEvaluating(false);
       const result = calculateResult();
@@ -434,8 +487,27 @@ export default function App() {
                 </AnimatePresence>
 
                 <div className="w-full h-full bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl overflow-hidden flex flex-col relative z-10 min-h-0">
-                  <AnimatePresence mode="popLayout">
-                    {view === "home" && (
+                  {isLoadingQuiz ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                      <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mb-4" />
+                      <p className="text-green-800 font-medium">正在加载定制试卷...</p>
+                    </div>
+                  ) : quizLoadError ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                      <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-4">
+                        <Edit2 size={32} className="mx-auto mb-2 opacity-50" />
+                        <p className="font-bold">{quizLoadError}</p>
+                      </div>
+                      <button 
+                        onClick={() => window.location.href = '/'}
+                        className="px-6 py-2 bg-green-600 text-white rounded-full font-medium shadow-lg hover:bg-green-700 transition"
+                      >
+                        返回主页
+                      </button>
+                    </div>
+                  ) : (
+                    <AnimatePresence mode="popLayout">
+                      {view === "home" && (
                     <HomeView 
                       hostName={quizData.hostName} 
                       userName={userName} 
@@ -521,6 +593,7 @@ export default function App() {
                     />
                   )}
                 </AnimatePresence>
+                )}
                 </div>
               </motion.div>
             )}

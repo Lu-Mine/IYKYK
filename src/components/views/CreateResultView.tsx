@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { Check, Download, Loader2, Home, ExternalLink, Github, Copy } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas";
-import { saveQuizToVercel } from "../../services/api";
+import { saveQuizToVercel } from "../../lib/api";
 import { ScrollArea } from "../ui/ScrollArea";
 
 interface Props {
@@ -21,9 +21,7 @@ export default function CreateResultView({ hostName, secret, title, description,
   const posterRef = useRef<HTMLDivElement>(null);
   const [posterTitle, setPosterTitle] = useState("从我的试卷里，懂我。");
   const [copied, setCopied] = useState(false);
-  const timestamp = useMemo(() => Date.now(), []);
-
-  const shareUrl = userid ? `https://iykyk.xlumi.cn/customquiz/${userid}.${timestamp}` : 'https://iykyk.xlumi.cn/';
+  const shareUrl = userid ? `https://iykyk.xlumi.cn/customquiz/${userid}` : 'https://iykyk.xlumi.cn/';
 
   const handleCopy = async () => {
     try {

@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, Settings2, Edit2, Check, Share, Image as ImageIcon, Rocket } from "lucide-react";
-import { saveQuizToVercel } from "../services/api";
-import { PRESET_QUESTIONS } from "../constants";
+import { saveQuizToVercel } from "../lib/api";
+import { PRESET_QUESTIONS } from "../lib/constants";
 import { getRandomQuestions } from "../lib/quizUtils";
 
 // Subcomponents
@@ -104,9 +104,24 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
   const handlePublish = async () => {
     setIsPublishing(true);
     const start = Date.now();
+    const quizTimestamp = Date.now();
     
     try {
-        const payload = { hostName, secret, title, description, questions, hostScores };
+        const fullId = `${hostName}.${quizTimestamp}`;
+        const deviceInfo = `${navigator.userAgent}`;
+        const createdAt = new Date().toISOString();
+        
+        const payload = { 
+          userId: fullId,
+          hostName, 
+          secret, 
+          title, 
+          description, 
+          questions, 
+          hostScores,
+          deviceInfo,
+          createdAt
+        };
         const id = await saveQuizToVercel(payload);
         setUserid(id);
     } catch(err) {

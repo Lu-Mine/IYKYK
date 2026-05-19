@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, ListPlus, Check, ArrowUp, X, Filter, Search } from "lucide-react";
-import { PRESET_QUESTIONS } from "../../constants";
+import { PRESET_QUESTIONS } from "../../lib/constants";
 import { getScoreStyles } from "../../lib/quizUtils";
 import { ScrollArea } from "../ui/ScrollArea";
 
