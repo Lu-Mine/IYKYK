@@ -86,7 +86,7 @@ export default function ResultView({
       initial="hidden"
       animate="show"
       exit="exit"
-      className="flex flex-col flex-grow w-full h-full min-h-0 overflow-hidden"
+      className="flex flex-col flex-1 w-full min-h-0 overflow-hidden"
     >
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar w-full relative">
       <div

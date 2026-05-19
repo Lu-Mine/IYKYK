@@ -26,7 +26,7 @@ export default function OverviewView({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.17 } }}
       transition={{ duration: 0.33 }}
-      className="flex flex-col w-full h-full min-h-0 relative select-none overflow-hidden"
+      className="flex flex-col flex-1 w-full min-h-0 relative select-none overflow-hidden"
     >
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-6 pb-6 relative w-full">
         <div className="flex flex-col items-center mb-4 mt-6">

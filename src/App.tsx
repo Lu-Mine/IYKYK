@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import confetti from "canvas-confetti";
-import { ArrowLeft, Home, Rocket } from "lucide-react";
+import { ArrowLeft, Home, Rocket, Edit2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { HOST_NAME, HOST_SCORES, QUESTIONS } from "./constants";
 import { calculateResultScore } from "./lib/quizUtils";
@@ -8,11 +8,104 @@ import HomeView, { HomeGreenWindow } from "./components/views/HomeView";
 import QuizView from "./components/views/QuizView";
 import OverviewView from "./components/views/OverviewView";
 import ResultView from "./components/views/ResultView";
+import CreateQuiz from "./components/CreateQuiz";
 
 type ViewState = "home" | "quiz" | "overview" | "result";
 
+const WaveBackground = ({ active }: { active: boolean }) => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      <div 
+        className="absolute top-0 left-0 origin-top-left pointer-events-none"
+        style={{ transform: 'rotate(45deg)' }}
+      >
+        {/* Large container to cover all diagonals of the screen */}
+        <div className="absolute top-[-100vmax] left-0 h-[250vmax] w-[250vmax]">
+          
+          {/* Layer 1 (bottom most, fastest) */}
+          <motion.div
+            initial={false}
+            animate={{ x: active ? "0%" : "-100%" }}
+            transition={{
+              duration: active ? 1.0 : 1.5,
+              ease: active ? [0.2, 0.8, 0.3, 1.0] : [0.4, 0.0, 0.2, 1.0],
+            }}
+            className="absolute top-0 bottom-0 left-0 w-full flex items-stretch"
+          >
+            <div className="w-[120vmax] shrink-0 bg-[#eef4f9]" />
+            <motion.div 
+              animate={{ scaleX: [1, 1.4, 0.8, 1.15, 1] }} 
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-[40vmax] shrink-0 origin-left"
+            >
+              <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full text-[#eef4f9]" style={{ overflow: "visible" }}>
+                <path fill="currentColor" d="M0,0 C80,250 120,500 50,750 C10,850 60,950 0,1000 Z" />
+              </svg>
+            </motion.div>
+          </motion.div>
+
+          {/* Layer 2 (middle) */}
+          <motion.div
+            initial={false}
+            animate={{ x: active ? "0%" : "-100%" }}
+            transition={{
+              duration: active ? 1.25 : 1.1,
+              ease: active ? [0.2, 0.8, 0.3, 1.0] : [0.4, 0.0, 0.2, 1.0],
+            }}
+            className="absolute top-0 bottom-0 left-0 w-full flex items-stretch"
+          >
+            <div className="w-[110vmax] shrink-0 bg-[#e4eff7]" />
+            <motion.div 
+              animate={{ scaleX: [1, 0.7, 1.3, 0.85, 1] }} 
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              className="w-[45vmax] shrink-0 origin-left -ml-[10vmax]"
+            >
+              <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full text-[#e4eff7]" style={{ overflow: "visible" }}>
+                <path fill="currentColor" d="M0,0 C120,300 20,600 70,800 C100,900 40,950 0,1000 Z" />
+              </svg>
+            </motion.div>
+          </motion.div>
+
+          {/* Layer 3 (top most, slowest) */}
+          <motion.div
+            initial={false}
+            animate={{ x: active ? "0%" : "-100%" }}
+            transition={{
+              duration: active ? 1.5 : 0.7,
+              ease: active ? [0.2, 0.8, 0.3, 1.0] : [0.4, 0.0, 0.2, 1.0],
+            }}
+            className="absolute top-0 bottom-0 left-0 w-full flex items-stretch"
+          >
+            <div className="w-[100vmax] shrink-0 bg-gradient-to-br from-[#dce8f5] via-[#cadff5] to-[#b6d2f0]" />
+            <motion.div 
+              animate={{ scaleX: [1, 1.4, 0.85, 1.25, 1] }} 
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="w-[40vmax] shrink-0 origin-left -ml-[5vmax]"
+            >
+              <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
+                <defs>
+                  <linearGradient id="wave-grad-4" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#dce8f5" />
+                    <stop offset="50%" stopColor="#cadff5" />
+                    <stop offset="100%" stopColor="#b6d2f0" />
+                  </linearGradient>
+                </defs>
+                <path fill="url(#wave-grad-4)" d="M0,0 C40,200 120,500 30,700 C-10,800 60,950 0,1000 V0 Z" />
+              </svg>
+            </motion.div>
+          </motion.div>
+        
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [view, setView] = useState<ViewState>("home");
+  const [isCreatingMode, setIsCreatingMode] = useState(false);
+  const hasSwitchedMode = useRef(false);
+  const [createStep, setCreateStep] = useState<string>("info");
   const [userName, setUserName] = useState("");
   const [quizData, setQuizData] = useState({
     questions: QUESTIONS,
@@ -284,8 +377,14 @@ export default function App() {
   };
 
   return (
-    <div className={`h-[100dvh] bg-gradient-to-br from-[#d4e0c1] via-[#f7f9f4] to-[#b5cca1] bg-[length:300%_300%] animate-bg-pan text-gray-dark font-sans flex flex-col items-center px-4 pt-6 pb-6 sm:px-8 sm:pt-12 sm:pb-12 selection:bg-green-forest selection:text-white overflow-hidden w-full relative transition-[padding] duration-500 ease-out`}>
-      {isAIStudio && (
+    <div className={`h-[100dvh] text-gray-dark font-sans flex flex-col items-center px-4 pt-6 pb-6 sm:px-8 sm:pt-12 sm:pb-12 overflow-hidden w-full relative transition-[padding] duration-500 ease-out ${isCreatingMode ? 'theme-blue selection:bg-klein-blue selection:text-white' : 'selection:bg-green-forest selection:text-white'}`}>
+      {/* Background elements */}
+      <div 
+        className="absolute inset-0 z-0 bg-[length:300%_300%] animate-bg-pan bg-gradient-to-br from-[#d4e0c1] via-[#f7f9f4] to-[#b5cca1]"
+      />
+      <WaveBackground active={isCreatingMode} />
+      
+      {isAIStudio && !isCreatingMode && (
         <button
           onClick={triggerSecretPass}
           className="fixed top-4 right-4 z-50 p-2 sm:p-3 bg-white/80 backdrop-blur-md rounded-full shadow-lg text-green-600 hover:text-green-500 hover:bg-white transition-all transform hover:scale-105"
@@ -294,122 +393,155 @@ export default function App() {
           <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
       )}
-      <div className="flex-1 min-h-0 w-full" />
-      <div 
-        className="relative w-full max-w-[480px] flex flex-col min-h-0 transition-all duration-300 shrink z-10"
+      <div className="flex-1 min-h-0 w-full z-10" />
+      <motion.div 
+        layout
+        className="relative w-full max-w-[480px] flex flex-col min-h-0 shrink z-10"
         style={{ 
-          maxHeight: "100%",
-          paddingTop: view === 'home' ? '2.5rem' : '0'
+          maxHeight: "100%"
         }}
+        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
       >
-        <AnimatePresence>
-          {view === "home" && (
-            <HomeGreenWindow commitHash={commitHash} />
-          )}
-        </AnimatePresence>
-
-        <motion.div
-          layout
-          transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-          className="w-full bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl overflow-hidden flex flex-col relative z-10 min-h-0 max-h-full flex-1"
-        >
-          <AnimatePresence mode="popLayout">
-            {view === "home" && (
-              <HomeView 
-                hostName={quizData.hostName} 
-                userName={userName} 
-                setUserName={setUserName} 
-                handleStart={handleStart} 
-              />
-            )}
-
-            {view === "quiz" && (
-              <QuizView
-                currentQuestion={currentQuestion}
-                totalQuestions={totalQuestions}
-                questions={quizData.questions}
-                direction={direction}
-                userScores={userScores}
-                isTransitioning={isTransitioning}
-                handleScore={handleScore}
-                handlePrev={handlePrev}
-              />
-            )}
-
-            {view === "overview" && (
-              <OverviewView
-                questions={quizData.questions}
-                userScores={userScores}
-                hostName={quizData.hostName}
-                setCurrentQuestion={setCurrentQuestion}
-                setView={setView}
-                handleSubmit={handleSubmit}
-              />
-            )}
-
-            {isEvaluating && (
-              <motion.div 
-                key="evaluating"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0 bg-white/60 backdrop-blur-md z-50 flex flex-col items-center justify-center rounded-3xl"
+        <div className="w-full relative flex-1 flex flex-col min-h-0">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {isCreatingMode ? (
+              <motion.div
+                layout
+                key="create-mode-container"
+                initial={{ x: "-150vw", opacity: 0 }}
+                animate={{ x: 0, opacity: 1, transition: { delay: 0.75, duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
+                exit={{ x: "-150vw", opacity: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
+                className="w-full h-full flex flex-col min-h-0"
               >
-                <div className="relative w-24 h-24">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="transparent"
-                      stroke="#e5e7eb"
-                      strokeWidth="8"
-                    />
-                    <motion.circle
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="transparent"
-                      stroke="#22c55e"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      strokeDasharray="251.2"
-                      initial={{ strokeDashoffset: 251.2 }}
-                      animate={{ strokeDashoffset: 0 }}
-                      transition={{ duration: 1, ease: "linear" }}
-                    />
-                  </svg>
+                <div className="w-full h-full bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl overflow-hidden flex flex-col relative z-10 min-h-0">
+                  <CreateQuiz key="create-quiz" onExit={() => { hasSwitchedMode.current = true; setIsCreatingMode(false) }} onStepChange={setCreateStep} isAIStudio={isAIStudio} />
                 </div>
-                <p className="mt-4 text-green-dark font-medium tracking-widest text-sm">比较中...</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                layout
+                key="solve-mode-container"
+                initial={{ x: "150vw", opacity: 0 }}
+                animate={{ x: 0, opacity: 1, transition: { delay: 0.75, duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
+                exit={{ x: "150vw", opacity: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
+                className="w-full h-full flex flex-col min-h-0 relative"
+              >
+                <motion.div 
+                  layout 
+                  initial={false} 
+                  animate={{ height: view === 'home' ? '2.5rem' : '0rem' }} 
+                  transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }} 
+                  className="w-full shrink-0" 
+                />
+                <AnimatePresence>
+                  {view === "home" && (
+                    <HomeGreenWindow commitHash={commitHash} delay={0} />
+                  )}
+                </AnimatePresence>
+
+                <div className="w-full h-full bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl overflow-hidden flex flex-col relative z-10 min-h-0">
+                  <AnimatePresence mode="popLayout">
+                    {view === "home" && (
+                    <HomeView 
+                      hostName={quizData.hostName} 
+                      userName={userName} 
+                      setUserName={setUserName} 
+                      handleStart={handleStart}
+                      onEnterCreateMode={() => { hasSwitchedMode.current = true; setIsCreatingMode(true) }}
+                    />
+                  )}
+
+                  {view === "quiz" && (
+                    <QuizView
+                      currentQuestion={currentQuestion}
+                      totalQuestions={totalQuestions}
+                      questions={quizData.questions}
+                      direction={direction}
+                      userScores={userScores}
+                      isTransitioning={isTransitioning}
+                      handleScore={handleScore}
+                      handlePrev={handlePrev}
+                    />
+                  )}
+
+                  {view === "overview" && (
+                    <OverviewView
+                      questions={quizData.questions}
+                      userScores={userScores}
+                      hostName={quizData.hostName}
+                      setCurrentQuestion={setCurrentQuestion}
+                      setView={setView}
+                      handleSubmit={handleSubmit}
+                    />
+                  )}
+
+                  {isEvaluating && (
+                    <motion.div 
+                      key="evaluating"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="absolute inset-0 bg-white/60 backdrop-blur-md z-50 flex flex-col items-center justify-center rounded-3xl"
+                    >
+                      <div className="relative w-24 h-24">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="transparent"
+                            stroke="#e5e7eb"
+                            strokeWidth="8"
+                          />
+                          <motion.circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="transparent"
+                            stroke="#22c55e"
+                            strokeWidth="8"
+                            strokeLinecap="round"
+                            strokeDasharray="251.2"
+                            initial={{ strokeDashoffset: 251.2 }}
+                            animate={{ strokeDashoffset: 0 }}
+                            transition={{ duration: 1, ease: "linear" }}
+                          />
+                        </svg>
+                      </div>
+                      <p className="mt-4 text-green-dark font-medium tracking-widest text-sm">比较中...</p>
+                    </motion.div>
+                  )}
+
+                  {view === "result" && (
+                    <ResultView
+                      quizData={quizData}
+                      userScores={userScores}
+                      userName={userName}
+                      isSkipped={isSkipped}
+                      timeSpentMessage={timeSpentMessage}
+                      resetToHome={resetToHome}
+                      restartQuiz={restartQuiz}
+                      isInitialSnakeDone={isInitialSnakeDone}
+                      setIsInitialSnakeDone={setIsInitialSnakeDone}
+                    />
+                  )}
+                </AnimatePresence>
+                </div>
               </motion.div>
             )}
-
-            {view === "result" && (
-              <ResultView
-                quizData={quizData}
-                userScores={userScores}
-                userName={userName}
-                isSkipped={isSkipped}
-                timeSpentMessage={timeSpentMessage}
-                resetToHome={resetToHome}
-                restartQuiz={restartQuiz}
-                isInitialSnakeDone={isInitialSnakeDone}
-                setIsInitialSnakeDone={setIsInitialSnakeDone}
-              />
-            )}
           </AnimatePresence>
-        </motion.div>
+        </div>
 
-      </div>
+      </motion.div>
 
       <div className="flex-1 w-full max-w-[480px] flex flex-col justify-start relative z-10 pointer-events-none">
         <AnimatePresence>
-          {view === "home" && savedResult && (
+          {!isCreatingMode && view === "home" && savedResult && (
             <motion.div 
               key="home-recover"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 16, pointerEvents: "none" }}
+              animate={{ opacity: 1, y: 0, pointerEvents: "auto" }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
               transition={{ delay: 0.35, duration: 0.25, ease: "easeOut" }}
               className="pt-6 flex justify-center pointer-events-auto"
@@ -424,11 +556,11 @@ export default function App() {
             </motion.div>
           )}
 
-          {view === "quiz" && currentQuestion === 0 && !isReviewing && (
+          {!isCreatingMode && view === "quiz" && currentQuestion === 0 && !isReviewing && (
             <motion.div 
               key="quiz-recover"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 16, pointerEvents: "none" }}
+              animate={{ opacity: 1, y: 0, pointerEvents: "auto" }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
               transition={{ delay: 0.35, duration: 0.25, ease: "easeOut" }}
               className="pt-6 flex justify-center gap-4 pointer-events-auto"
@@ -445,6 +577,25 @@ export default function App() {
               <button
                 onClick={resetToHome}
                 className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-green-dark/5"
+              >
+                <Home size={16} />
+                回到主页
+              </button>
+            </motion.div>
+          )}
+
+          {isCreatingMode && createStep === "result" && (
+            <motion.div 
+              key="create-result-home"
+              initial={{ opacity: 0, y: 16, pointerEvents: "none" }}
+              animate={{ opacity: 1, y: 0, pointerEvents: "auto" }}
+              exit={{ opacity: 0, transition: { duration: 0 } }}
+              transition={{ delay: 5.0, duration: 0.8, ease: "easeOut" }}
+              className="pt-6 flex justify-center gap-4 pointer-events-auto"
+            >
+              <button
+                onClick={() => setIsCreatingMode(false)}
+                className="text-sm font-medium text-klein-blue hover:text-klein-blue-light transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-klein-blue/5"
               >
                 <Home size={16} />
                 回到主页

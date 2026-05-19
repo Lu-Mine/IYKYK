@@ -10,6 +10,9 @@
   --color-green-forest: #4CAF50;
   --color-green-dark: #2E7D32;
   --color-gray-dark: #333333;
+  --color-klein-blue: #002FA7;
+  --color-klein-blue-light: #3D6BEB;
+  --color-klein-morandi: #EBF1FF;
 
   --animate-rainbow: rainbow 4s ease infinite;
   --animate-bg-pan: bg-pan 15s ease infinite;
@@ -70,6 +73,16 @@ button {
   * {
     scrollbar-width: thin;
     scrollbar-color: #4CAF5080 transparent;
+  }
+
+  .theme-blue ::-webkit-scrollbar-thumb {
+    background-color: #002FA766;
+  }
+  .theme-blue ::-webkit-scrollbar-thumb:hover {
+    background-color: #002FA7CC;
+  }
+  .theme-blue * {
+    scrollbar-color: #002FA780 transparent;
   }
 }
 

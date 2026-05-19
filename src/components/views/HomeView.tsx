@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Github } from "lucide-react";
+import { Github, Edit2, Rocket } from "lucide-react";
 
 interface HomeViewProps {
   hostName: string;
@@ -8,14 +8,14 @@ interface HomeViewProps {
   handleStart: () => void;
 }
 
-export function HomeGreenWindow({ commitHash }: { commitHash: string }) {
+export function HomeGreenWindow({ commitHash, delay = 0.4 }: { commitHash: string, delay?: number }) {
   return (
     <motion.div
       key="sub-window"
       initial={{ y: "2.5rem", opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: "2.5rem", opacity: 0, transition: { duration: 0.3 } }}
-      transition={{ delay: 0.4, duration: 0.6, type: "spring", bounce: 0.3 }}
+      transition={{ delay: delay, duration: 0.6, type: "spring", bounce: 0.3 }}
       className="absolute top-0 inset-x-0 h-[5rem] z-0 flex flex-col pointer-events-none"
     >
       <div className="flex-1 bg-[#e6ebd9]/70 backdrop-blur-xl rounded-t-3xl shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.1)] border border-white/30 px-6 leading-none block pointer-events-auto">
@@ -30,7 +30,7 @@ export function HomeGreenWindow({ commitHash }: { commitHash: string }) {
             className="text-[#9ca393] hover:text-green-dark transition-colors flex items-center gap-2 group"
           >
             <span className="select-none font-mono text-[12px] opacity-80 group-hover:opacity-100 transition-opacity pt-[1px]">
-              IYKYK({commitHash})
+              IYKYK({(window.location.hostname.includes("run.app") || window.location.hostname.includes("ai.studio") || window.location.hostname.includes("google")) ? "debug" : commitHash})
             </span>
             <Github className="w-[19px] h-[19px]" />
           </a>
@@ -40,7 +40,7 @@ export function HomeGreenWindow({ commitHash }: { commitHash: string }) {
   );
 }
 
-export default function HomeView({ hostName, userName, setUserName, handleStart }: HomeViewProps) {
+export default function HomeView({ hostName, userName, setUserName, handleStart, onEnterCreateMode }: HomeViewProps & { onEnterCreateMode?: () => void }) {
   return (
     <motion.div
       layout
@@ -49,24 +49,36 @@ export default function HomeView({ hostName, userName, setUserName, handleStart 
       animate="center"
       exit="exit"
       variants={{
-        enter: { opacity: 0 },
+        enter: { opacity: 0, y: 50 },
         center: {
-          opacity: 1,
-          transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+          opacity: 1, y: 0,
+          transition: { delay: 0.4, staggerChildren: 0.1, delayChildren: 0.5, duration: 0.5, ease: "easeOut" },
         },
         exit: {
-          opacity: 0,
+          opacity: 0, y: 50,
           transition: {
             staggerChildren: 0.02,
             staggerDirection: -1,
-            duration: 0.17,
+            duration: 0.4,
+            ease: "easeIn"
           },
         },
       }}
-      className="flex flex-col flex-grow w-full h-full min-h-0 overflow-hidden"
+      className="flex flex-col flex-1 w-full min-h-0 overflow-hidden relative"
     >
+      {onEnterCreateMode && (
+        <div className="absolute top-6 right-6 z-50">
+          <button 
+            onClick={onEnterCreateMode}
+            className="text-sm font-medium text-klein-blue hover:text-klein-blue-light flex items-center gap-1.5 transition-colors bg-white/50 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/40 shadow-sm"
+          >
+            <Edit2 size={14} /> 我也要出题
+          </button>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-8 pb-10 flex flex-col relative">
-        <div className="my-auto w-full">
+        <div className="w-full">
           <motion.div
             variants={{
               enter: { opacity: 0, y: 15 },
@@ -83,7 +95,7 @@ export default function HomeView({ hostName, userName, setUserName, handleStart 
               <span className="select-none font-sans text-base text-gray-500 mr-1 not-italic font-medium">
                 From{" "}
               </span>
-              <span className="font-[Cambria,'Caladea',ui-serif,Georgia,'Times_New_Roman',Times,serif] text-2xl tracking-wide text-green-dark italic">
+              <span className="font-[Cambria,'Caladea',ui-serif,Georgia,'Times_New_Roman',Times,serif] text-2xl tracking-wide text-green-dark italic relative -top-[2px]">
                 {hostName}
               </span>
               <span className="font-sans text-base text-gray-500 mr-1 not-italic font-medium">
@@ -164,9 +176,9 @@ export default function HomeView({ hostName, userName, setUserName, handleStart 
         <button
           onClick={handleStart}
           disabled={!userName.trim()}
-          className="w-full bg-green-forest hover:bg-green-dark text-white font-bold text-lg py-3 rounded-xl transition-all shadow-md shadow-green-200/50 disabled:shadow-none disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+          className="w-full bg-green-forest hover:bg-green-dark text-white font-bold text-lg py-3 rounded-xl transition-all shadow-md shadow-green-200/50 disabled:shadow-none disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          开始挑战
+          <Rocket size={20} /> 开始挑战
         </button>
       </motion.div>
     </motion.div>
