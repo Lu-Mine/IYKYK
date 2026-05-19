@@ -67,6 +67,38 @@ export const getResultFeedback = (percentage: number) => {
   }
 };
 
+export const getRandomQuestions = (presets: {text: string, category: string}[], count: number = 10) => {
+  const categories = Array.from(new Set(presets.map(p => p.category)));
+  const picked: {text: string, category: string}[] = [];
+  
+  // ensure we pick across different categories randomly
+  const grouped = new Map<string, {text: string, category: string}[]>();
+  presets.forEach(p => {
+    if (!grouped.has(p.category)) grouped.set(p.category, []);
+    grouped.get(p.category)!.push(p);
+  });
+  
+  // shuffle within each category
+  grouped.forEach(list => list.sort(() => Math.random() - 0.5));
+  
+  const cats = Array.from(grouped.keys());
+  cats.sort(() => Math.random() - 0.5); // shuffle categories
+  
+  while (picked.length < count && grouped.size > 0) {
+    for (const cat of Array.from(grouped.keys())) {
+      if (picked.length >= count) break;
+      const list = grouped.get(cat)!;
+      if (list.length > 0) {
+        picked.push(list.shift()!);
+      } else {
+        grouped.delete(cat);
+      }
+    }
+  }
+  
+  return picked.map(p => p.text).sort(() => Math.random() - 0.5);
+};
+
 export const getScoreStyles = (s: number, isSelected: boolean) => {
   if (isSelected) {
     switch (s) {

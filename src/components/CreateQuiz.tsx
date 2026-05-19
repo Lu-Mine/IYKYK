@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, Settings2, Edit2, Check, Share, Image as ImageIcon, Rocket } from "lucide-react";
-import html2canvas from "html2canvas";
 import { saveQuizToVercel } from "../services/api";
 import { PRESET_QUESTIONS } from "../constants";
+import { getRandomQuestions } from "../lib/quizUtils";
 
 // Subcomponents
 import CreateInfoView from "./views/CreateInfoView";
@@ -28,6 +28,7 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
     onStepChange?.(step);
   }, [step, onStepChange]);
   const [hostName, setHostName] = useState("Mysterious");
+  const lastActiveHostNameRef = useRef(hostName);
   const [secret, setSecret] = useState("");
   const [title, setTitle] = useState("这一次，由我来定义自己。");
   const [description, setDescription] = useState("欢迎来到出题模式！\n作为出题者，你可以自由添加你想要的测试题，设置你对自己的评价分数。\n这套问卷将打破常规的本地刻板印象，你可以随意编辑你的考察细节，最终所有的结果都将属于最真实的你。");
@@ -38,7 +39,7 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
   const handleDebugFill = () => {
     if (!isAIStudio) return;
     setSecret("Lumine1234");
-    setQuestions(PRESET_QUESTIONS.slice(0, 10));
+    setQuestions(getRandomQuestions(PRESET_QUESTIONS, 10));
     const randomScores = Array.from({ length: 10 }, () => Math.floor(Math.random() * 5) + 1);
     setHostScores(randomScores);
     setStep("overview");
@@ -47,12 +48,23 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
   const [isPublishing, setIsPublishing] = useState(false);
   const [userid, setUserid] = useState<string | null>(null);
 
+  const handleQuickStart = () => {
+    if (!secret.trim()) return; // Validation is done in InfoView, but double check
+    lastActiveHostNameRef.current = hostName;
+    setQuestions(getRandomQuestions(PRESET_QUESTIONS, 10).map(q => q.replace(/他/g, hostName)));
+    setHostScores(new Array(10).fill(0));
+    setStep("quiz");
+  };
+
   const handleStart = () => {
     if (!secret.trim()) return;
     if (questions.length === 0) {
-      setQuestions(PRESET_QUESTIONS.slice(0, 10));
-      setHostScores(new Array(10).fill(0));
+      setQuestions([""]);
+      setHostScores([0]);
+    } else if (lastActiveHostNameRef.current && hostName && lastActiveHostNameRef.current !== hostName) {
+      setQuestions(prev => prev.map(q => q.split(lastActiveHostNameRef.current).join(hostName)));
     }
+    lastActiveHostNameRef.current = hostName;
     setStep("quiz");
   };
 
@@ -119,7 +131,7 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.5, delay: 0.4, ease: "easeOut" } }}
       exit={{ opacity: 0, y: 50, transition: { duration: 0.4, ease: "easeIn" } }}
-      className="flex flex-col flex-1 w-full h-full min-h-0"
+      className="flex flex-col flex-1 w-full h-full min-h-0 select-none"
     >
       {isAIStudio && step !== "result" && createPortal(
         <button 
@@ -133,7 +145,7 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
       )}
       <AnimatePresence mode="popLayout">
         {step === "info" && (
-          <motion.div key="info" className="flex flex-col flex-1 w-full h-full min-h-0 relative" initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} transition={{ duration: 0.3 }}>
+          <motion.div layout key="info" className="flex flex-col flex-1 w-full min-h-0 relative" initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} transition={{ duration: 0.3 }}>
             <CreateInfoView 
               hostName={hostName}
               setHostName={setHostName}
@@ -145,6 +157,7 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
               setDescription={setDescription}
               hasEditedQuestions={hasEditedQuestions}
               onStart={handleStart}
+              onQuickStart={handleQuickStart}
               onExit={onExit}
               isAIStudio={isAIStudio}
               onDebugFill={handleDebugFill}
@@ -153,12 +166,13 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
         )}
 
         {step === "quiz" && (
-          <motion.div key="quiz" className="flex flex-col flex-1 w-full h-full min-h-0 relative" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}>
+          <motion.div layout key="quiz" className="flex flex-col flex-1 w-full min-h-0 relative" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}>
             <CreateQuestionView
               currentQuestionIndex={currentQuestionIndex}
               setCurrentQuestionIndex={setCurrentQuestionIndex}
               questions={questions}
               hostScores={hostScores}
+              hostName={hostName}
               updateQuestion={updateQuestion}
               updateScore={updateScore}
               addNewQuestion={addNewQuestion}
@@ -169,7 +183,7 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
         )}
 
         {step === "overview" && (
-          <motion.div key="overview" className="flex flex-col flex-1 w-full h-full min-h-0 relative" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}>
+          <motion.div layout key="overview" className="flex flex-col flex-1 w-full min-h-0 relative" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}>
             <CreateOverviewView
               questions={questions}
               hostScores={hostScores}
@@ -190,7 +204,7 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
         )}
 
         {step === "result" && (
-          <motion.div key="result" className="flex flex-col flex-1 w-full h-full min-h-0 relative" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}>
+          <motion.div layout key="result" className="flex flex-col flex-1 w-full min-h-0 relative" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}>
             <CreateResultView
               hostName={hostName}
               secret={secret}

@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getScoreStyles } from "../../lib/quizUtils";
+import { ScrollArea } from "../ui/ScrollArea";
 
 interface QuizViewProps {
   currentQuestion: number;
@@ -33,7 +34,7 @@ export default function QuizView({
       transition={{ duration: 0.33 }}
       className="flex flex-col flex-1 w-full min-h-0 select-none overflow-hidden"
     >
-      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-6 flex flex-col relative w-full">
+      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="p-6 flex flex-col relative min-h-full">
         <div className="mb-4 flex-shrink-0">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-1.5 text-gray-500">
@@ -81,7 +82,7 @@ export default function QuizView({
             </motion.div>
           </AnimatePresence>
         </div>
-      </div>
+      </ScrollArea>
 
       <div className="p-4 sm:p-6 bg-white/40 border-t border-white/40 flex flex-col flex-shrink-0 z-20 w-full backdrop-blur-md">
         <div className="flex items-center justify-between text-xs text-gray-400 mb-3 px-1">

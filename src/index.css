@@ -17,6 +17,10 @@
   --animate-rainbow: rainbow 4s ease infinite;
   --animate-bg-pan: bg-pan 15s ease infinite;
 
+  --animate-wave-breathe-1: wave-breathe-1 5s ease-in-out infinite;
+  --animate-wave-breathe-2: wave-breathe-2 4.5s ease-in-out infinite;
+  --animate-wave-breathe-3: wave-breathe-3 6s ease-in-out infinite;
+
   @keyframes rainbow {
     0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
@@ -25,6 +29,25 @@
   @keyframes bg-pan {
     0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
+  }
+
+  @keyframes wave-breathe-1 {
+    0%, 100% { transform: translateZ(0) scaleX(1); }
+    25% { transform: translateZ(0) scaleX(1.4); }
+    50% { transform: translateZ(0) scaleX(0.8); }
+    75% { transform: translateZ(0) scaleX(1.15); }
+  }
+
+  @keyframes wave-breathe-2 {
+    0%, 100% { transform: translateZ(0) scaleX(1); }
+    33% { transform: translateZ(0) scaleX(0.7); }
+    66% { transform: translateZ(0) scaleX(1.3); }
+  }
+
+  @keyframes wave-breathe-3 {
+    0%, 100% { transform: translateZ(0) scaleX(1); }
+    30% { transform: translateZ(0) scaleX(1.4); }
+    70% { transform: translateZ(0) scaleX(0.85); }
   }
 }
 
@@ -53,36 +76,60 @@ button {
 }
 
 @layer base {
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-    background: transparent;
-  }
-  ::-webkit-scrollbar-track,
-  ::-webkit-scrollbar-track-piece {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background-color: #4CAF5066;
-    border-radius: 10px;
-    background-clip: padding-box;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: #4CAF50CC;
-  }
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #4CAF5080 transparent;
+  /* ============================================================== */
+  /* 全局 GPU 硬件加速 & 渲染优化                                      */
+  /* ============================================================== */
+  *, *::before, *::after {
+    /* 开启最高级别的字体抗锯齿，使动画过渡中字体边缘更平滑 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  .theme-blue ::-webkit-scrollbar-thumb {
-    background-color: #002FA766;
+  /* 针对有动态内联样式(如 framer-motion)注入的元素，强制触发重绘和 GPU 运算 */
+  [style*="transform"], [style*="opacity"] {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    will-change: transform, opacity;
   }
-  .theme-blue ::-webkit-scrollbar-thumb:hover {
-    background-color: #002FA7CC;
+  
+  /* 对普通的块级元素和媒体开启隐式 GPU 层缓冲 */
+  div, section, main, article, img, video {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0); 
   }
-  .theme-blue * {
-    scrollbar-color: #002FA780 transparent;
+
+  /* ！！！重要：规避 fixed 元素的 GPU 加速，否则会破坏全局绝对/固定定位 ！！！*/
+  .fixed, [class*="fixed"], [style*="position: fixed"] {
+    transform: none !important;
+    will-change: auto !important;
+    backface-visibility: visible !important;
+  }
+  /* ============================================================== */
+
+  /* Custom OverlayScrollbars theme: Glass */
+  .os-theme-glass {
+    --os-size: 8px;
+    --os-padding-perpendicular: 2px;
+    --os-padding-axis: 2px;
+    --os-track-bg: transparent;
+    --os-handle-bg: rgba(76, 175, 80, 0.65); /* green-forest */
+    --os-handle-bg-hover: rgba(76, 175, 80, 0.9);
+    --os-handle-bg-active: rgba(76, 175, 80, 1);
+    --os-handle-border-radius: 10px;
+  }
+
+  .theme-blue .os-theme-glass,
+  .theme-blue.os-theme-glass {
+    --os-handle-bg: rgba(0, 47, 167, 0.6); /* klein-blue */
+    --os-handle-bg-hover: rgba(0, 47, 167, 0.85);
+    --os-handle-bg-active: rgba(0, 47, 167, 1);
+  }
+
+  .os-theme-glass .os-scrollbar-handle {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    transition: background-color 0.5s ease;
   }
 }
 
@@ -97,6 +144,32 @@ button {
   
   .custom-scrollbar {
     /* Use overlay to make scrollbars float and not take up layout space */
-    overflow-y: overlay !important;
+    overflow: overlay !important;
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Force overlay behavior on all explicit scroll containers for browsers that support it */
+  .overflow-auto { overflow: overlay !important; }
+  .overflow-x-auto { overflow-x: overlay !important; }
+  .overflow-y-auto { overflow-y: overlay !important; }
+  .overflow-scroll { overflow: overlay !important; }
+  .overflow-x-scroll { overflow-x: overlay !important; }
+  .overflow-y-scroll { overflow-y: overlay !important; }
 }

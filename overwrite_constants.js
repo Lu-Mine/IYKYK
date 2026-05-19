@@ -1,4 +1,6 @@
-export const HOST_NAME = "Lumine";
+const fs = require('fs');
+
+const content = \`export const HOST_NAME = "Lumine";
 
 export const HOST_SCORES = [
   4, 5, 2, 3, 6, 5, 5, 6, 4, 6, 7, 2, 2, 2, 6, 3, 4, 2, 7, 6,
@@ -141,3 +143,7 @@ export const PRESET_QUESTIONS = [
   { text: "如果有了闲钱，他首先想到的是存起来以备不虞，而不是买好东西犒劳自己。", category: "价值观" },
   { text: "哪怕只是一次短暂的出行，他也必须确保所有行程都紧密安排没有遗漏。", category: "生活习惯" }
 ];
+\`;
+
+fs.writeFileSync('src/constants.ts', content, 'utf-8');
+console.log('constants updated!');

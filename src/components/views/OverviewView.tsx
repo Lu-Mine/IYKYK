@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { getScoreStyles } from "../../lib/quizUtils";
+import { ScrollArea } from "../ui/ScrollArea";
 
 interface OverviewViewProps {
   questions: string[];
@@ -28,7 +29,7 @@ export default function OverviewView({
       transition={{ duration: 0.33 }}
       className="flex flex-col flex-1 w-full min-h-0 relative select-none overflow-hidden"
     >
-      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-6 pb-6 relative w-full">
+      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="px-6 pb-6 relative min-h-full">
         <div className="flex flex-col items-center mb-4 mt-6">
           <p className="text-sm text-gray-400 mb-1 uppercase tracking-[0.2em] font-bold">
             答题概览
@@ -93,7 +94,7 @@ export default function OverviewView({
             })}
           </div>
         </div>
-      </div>
+      </ScrollArea>
 
       <div className="p-6 bg-white/40 border-t border-white/40 flex-shrink-0 z-30 w-full backdrop-blur-md">
         <button

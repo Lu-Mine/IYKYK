@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Edit2, ArrowLeft, Home, Rocket } from "lucide-react";
+import { Edit2, ArrowLeft, Home, Rocket, Zap } from "lucide-react";
+import { ScrollArea } from "../ui/ScrollArea";
 
 interface Props {
   hostName: string;
@@ -15,11 +16,12 @@ interface Props {
   hasEditedQuestions: boolean;
   onStart: () => void;
   onExit: () => void;
+  onQuickStart: () => void;
   isAIStudio?: boolean;
   onDebugFill?: () => void;
 }
 
-export default function CreateInfoView({ hostName, setHostName, secret, setSecret, title, setTitle, description, setDescription, hasEditedQuestions, onStart, onExit, isAIStudio, onDebugFill }: Props) {
+export default function CreateInfoView({ hostName, setHostName, secret, setSecret, title, setTitle, description, setDescription, hasEditedQuestions, onStart, onQuickStart, onExit, isAIStudio, onDebugFill }: Props) {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -59,7 +61,12 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
          return; 
       }
       if (showExitConfirm) {
-        if (e.key === "Enter") onExit();
+        if (e.key === "Enter") {
+          setShowExitConfirm(false);
+          setTimeout(() => {
+             onExit();
+          }, 200);
+        }
         if (e.key === "Escape") setShowExitConfirm(false);
         return;
       }
@@ -94,7 +101,22 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-8 pb-10 flex flex-col relative mt-6">
+      <div className="absolute top-4 right-4 z-50">
+        <button 
+          onClick={() => {
+            if (isSecretValid(secret)) onQuickStart();
+            else {
+              setShowSecretError(true);
+              setTimeout(() => setShowSecretError(false), 3000);
+            }
+          }} 
+          className="text-sm font-medium text-klein-blue border border-klein-blue/30 bg-klein-blue/5 hover:bg-klein-blue/10 flex items-center gap-1 transition-colors px-3 py-1.5 rounded-full shadow-sm"
+        >
+          快速开始 <Zap size={14} className="fill-current" />
+        </button>
+      </div>
+
+      <ScrollArea className="flex-1 custom-scrollbar mt-6" contentClassName="p-8 pb-10 flex flex-col relative min-h-full">
         <div className="my-auto w-full">
           <motion.div variants={{ enter: { opacity: 0, y: 15 }, center: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -5 } }} className="mb-5 w-full">
             <div className="text-left mb-5 flex items-center flex-wrap gap-2">
@@ -109,7 +131,7 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
                   onChange={(e) => setHostName(e.target.value)}
                   onBlur={() => setIsEditingName(false)}
                   onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
-                  className="font-[Cambria,'Caladea',ui-serif,Georgia,'Times_New_Roman',Times,serif] text-2xl tracking-wide text-klein-blue italic bg-transparent border-b border-klein-blue focus:outline-none w-32 relative -top-[2px]"
+                  className="select-text font-[Cambria,'Caladea',ui-serif,Georgia,'Times_New_Roman',Times,serif] text-2xl tracking-wide text-klein-blue italic bg-transparent border-b border-klein-blue focus:outline-none w-32 relative -top-[2px]"
                 />
               ) : (
                 <div className="flex items-center gap-2 group relative">
@@ -136,7 +158,7 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
                   onChange={(e) => setTitle(e.target.value)}
                   onBlur={() => setIsEditingTitle(false)}
                   onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
-                  className="w-full text-2xl font-bold font-display text-klein-blue text-center leading-snug bg-transparent border-b border-klein-blue focus:outline-none transition-colors px-2 py-1"
+                  className="select-text w-full text-2xl font-bold font-display text-klein-blue text-center leading-snug bg-transparent border-b border-klein-blue focus:outline-none transition-colors px-2 py-1"
                   placeholder="试卷标题"
                 />
               ) : (
@@ -166,7 +188,7 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   onBlur={() => setIsEditingDesc(false)}
-                  className="w-full text-sm text-gray-600 text-justify tracking-tight bg-white/40 backdrop-blur-sm border border-klein-blue/30 focus:border-klein-blue/50 rounded-xl resize-none overflow-hidden outline-none p-3 transition-colors shadow-inner"
+                  className="select-text w-full text-sm text-gray-600 text-justify tracking-tight bg-white/40 backdrop-blur-sm border border-klein-blue/30 focus:border-klein-blue/50 rounded-xl resize-none overflow-hidden outline-none p-3 transition-colors shadow-inner"
                   placeholder="试卷简介..."
                 />
               ) : (
@@ -193,7 +215,7 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
             </blockquote>
           </motion.div>
         </div>
-      </div>
+      </ScrollArea>
 
       <motion.div
         variants={{ enter: { opacity: 0, y: 20 }, center: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 10 } }}
@@ -203,7 +225,7 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
           type="text"
           placeholder="设置一个密语 (必填)"
           maxLength={20}
-          className="select-none w-full px-4 py-3 rounded-xl border border-white/50 focus:outline-none focus:ring-2 focus:ring-klein-blue focus:border-transparent transition-all text-center bg-white/60 shadow-sm backdrop-blur-sm"
+          className="select-text w-full px-4 py-3 rounded-xl border border-white/50 focus:outline-none focus:ring-2 focus:ring-klein-blue focus:border-transparent transition-all text-center bg-white/60 shadow-sm backdrop-blur-sm"
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           onBlur={handleSecretBlur}

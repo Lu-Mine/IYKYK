@@ -30,18 +30,16 @@ const WaveBackground = ({ active }: { active: boolean }) => {
               duration: active ? 1.0 : 1.5,
               ease: active ? [0.2, 0.8, 0.3, 1.0] : [0.4, 0.0, 0.2, 1.0],
             }}
-            className="absolute top-0 bottom-0 left-0 w-full flex items-stretch"
+            className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
           >
-            <div className="w-[120vmax] shrink-0 bg-[#eef4f9]" />
-            <motion.div 
-              animate={{ scaleX: [1, 1.4, 0.8, 1.15, 1] }} 
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              className="w-[40vmax] shrink-0 origin-left"
+            <div className="absolute top-0 bottom-0 left-0 w-[120vmax] bg-[#eef4f9]" />
+            <div 
+              className="absolute top-0 bottom-0 left-[120vmax] w-[40vmax] origin-left animate-wave-breathe-1 will-change-transform"
             >
               <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full text-[#eef4f9]" style={{ overflow: "visible" }}>
                 <path fill="currentColor" d="M0,0 C80,250 120,500 50,750 C10,850 60,950 0,1000 Z" />
               </svg>
-            </motion.div>
+            </div>
           </motion.div>
 
           {/* Layer 2 (middle) */}
@@ -52,18 +50,16 @@ const WaveBackground = ({ active }: { active: boolean }) => {
               duration: active ? 1.25 : 1.1,
               ease: active ? [0.2, 0.8, 0.3, 1.0] : [0.4, 0.0, 0.2, 1.0],
             }}
-            className="absolute top-0 bottom-0 left-0 w-full flex items-stretch"
+            className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
           >
-            <div className="w-[110vmax] shrink-0 bg-[#e4eff7]" />
-            <motion.div 
-              animate={{ scaleX: [1, 0.7, 1.3, 0.85, 1] }} 
-              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-              className="w-[45vmax] shrink-0 origin-left -ml-[10vmax]"
+            <div className="absolute top-0 bottom-0 left-0 w-[110vmax] bg-[#e4eff7]" />
+            <div 
+              className="absolute top-0 bottom-0 left-[106vmax] w-[45vmax] origin-left animate-wave-breathe-2 will-change-transform"
             >
               <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full text-[#e4eff7]" style={{ overflow: "visible" }}>
                 <path fill="currentColor" d="M0,0 C120,300 20,600 70,800 C100,900 40,950 0,1000 Z" />
               </svg>
-            </motion.div>
+            </div>
           </motion.div>
 
           {/* Layer 3 (top most, slowest) */}
@@ -74,13 +70,11 @@ const WaveBackground = ({ active }: { active: boolean }) => {
               duration: active ? 1.5 : 0.7,
               ease: active ? [0.2, 0.8, 0.3, 1.0] : [0.4, 0.0, 0.2, 1.0],
             }}
-            className="absolute top-0 bottom-0 left-0 w-full flex items-stretch"
+            className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
           >
-            <div className="w-[100vmax] shrink-0 bg-gradient-to-br from-[#dce8f5] via-[#cadff5] to-[#b6d2f0]" />
-            <motion.div 
-              animate={{ scaleX: [1, 1.4, 0.85, 1.25, 1] }} 
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              className="w-[40vmax] shrink-0 origin-left -ml-[5vmax]"
+            <div className="absolute top-0 bottom-0 left-0 w-[100vmax] bg-gradient-to-br from-[#dce8f5] via-[#cadff5] to-[#b6d2f0]" />
+            <div 
+              className="absolute top-0 bottom-0 left-[96vmax] w-[40vmax] origin-left animate-wave-breathe-3 will-change-transform"
             >
               <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
                 <defs>
@@ -92,7 +86,7 @@ const WaveBackground = ({ active }: { active: boolean }) => {
                 </defs>
                 <path fill="url(#wave-grad-4)" d="M0,0 C40,200 120,500 30,700 C-10,800 60,950 0,1000 V0 Z" />
               </svg>
-            </motion.div>
+            </div>
           </motion.div>
         
         </div>

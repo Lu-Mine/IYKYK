@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, ArrowRight, ListPlus, Check, ArrowUp, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ListPlus, Check, ArrowUp, X, Filter, Search } from "lucide-react";
 import { PRESET_QUESTIONS } from "../../constants";
 import { getScoreStyles } from "../../lib/quizUtils";
+import { ScrollArea } from "../ui/ScrollArea";
 
 interface Props {
   currentQuestionIndex: number;
@@ -15,6 +16,7 @@ interface Props {
   addNewQuestion: () => void;
   finishQuiz: () => void;
   onGoToInfo: () => void;
+  hostName: string;
 }
 
 export default function CreateQuestionView({
@@ -27,8 +29,13 @@ export default function CreateQuestionView({
   addNewQuestion,
   finishQuiz,
   onGoToInfo,
+  hostName,
 }: Props) {
   const [showPreset, setShowPreset] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const [direction, setDirection] = useState(1);
@@ -40,6 +47,14 @@ export default function CreateQuestionView({
   }
 
   const qText = questions[currentQuestionIndex] || "";
+
+  const ALL_CATEGORIES = Array.from(new Set(PRESET_QUESTIONS.map(q => q.category)));
+
+  const filteredPresets = PRESET_QUESTIONS.filter(pq => {
+    const matchesSearch = pq.text.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(pq.category);
+    return matchesSearch && matchesCategory;
+  });
 
   // auto-height removed: textarea is fixed to 3 rows
 
@@ -133,7 +148,7 @@ export default function CreateQuestionView({
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-6 sm:px-8 pb-6 flex flex-col items-center flex-grow justify-center">
+          <ScrollArea className="flex-1 custom-scrollbar" contentClassName="px-6 sm:px-8 pb-6 flex flex-col items-center flex-grow justify-center min-h-full">
         <div className="w-full relative min-h-[160px] bg-white/50 backdrop-blur-sm border border-klein-blue/20 hover:border-klein-blue/50 focus-within:border-klein-blue/50 rounded-xl shadow-sm transition-colors flex flex-col items-center justify-center p-4 pb-12">
           <textarea
             ref={textareaRef}
@@ -141,7 +156,7 @@ export default function CreateQuestionView({
             onChange={(e) => updateQuestion(currentQuestionIndex, e.target.value)}
             placeholder="在这里输入你的题目..."
             rows={3}
-            className="w-full text-lg sm:text-xl font-medium text-gray-800 text-center leading-relaxed focus:outline-none bg-transparent resize-none placeholder-gray-400 py-1 overflow-y-auto custom-scrollbar"
+            className="w-full text-lg sm:text-xl font-medium text-gray-800 text-center leading-relaxed focus:outline-none bg-transparent resize-none placeholder-gray-400 py-1 overflow-y-auto select-text"
           />
           <button
             onClick={() => setShowPreset(true)}
@@ -176,7 +191,7 @@ export default function CreateQuestionView({
             })}
           </div>
         </div>
-      </div>
+      </ScrollArea>
 
       {/* Footer Navigation */}
       <div className="relative pb-6 px-6 sm:px-8 flex justify-between items-center bg-transparent mt-2">
@@ -214,10 +229,13 @@ export default function CreateQuestionView({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 transition={{ duration: 0.2, type: "spring", bounce: 0.3 }}
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                className="bg-white/95 backdrop-blur-xl w-full max-w-2xl h-[85%] sm:h-[80%] rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (showFilterDropdown) setShowFilterDropdown(false);
+                }}
+                className="bg-white/95 backdrop-blur-xl w-[90vw] max-w-2xl h-[80vh] max-h-[700px] rounded-3xl shadow-2xl flex flex-col overflow-hidden"
               >
-                <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-white/50">
+                <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-white/50 shrink-0">
                   <h3 className="font-bold text-gray-800 flex items-center gap-2">
                     <ListPlus size={18} className="text-klein-blue" />
                     预设题库
@@ -226,21 +244,86 @@ export default function CreateQuestionView({
                     关闭 <X size={16} />
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-3">
-                  {PRESET_QUESTIONS.map((pq, idx) => {
-                    const usedIn = questions.lastIndexOf(pq);
+                
+                <div className="p-4 border-b border-gray-100 bg-white/50 flex gap-2 relative z-20 shrink-0">
+                  <div className="relative flex-1">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="搜索题目..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-klein-blue/20 focus:border-klein-blue/50 transition-all placeholder:text-gray-400"
+                    />
+                  </div>
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowFilterDropdown(!showFilterDropdown);
+                      }}
+                      className={`p-2 rounded-lg border transition-all ${
+                        selectedCategories.length > 0
+                          ? "bg-klein-blue/10 border-klein-blue/30 text-klein-blue"
+                          : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
+                      }`}
+                    >
+                      <Filter size={20} />
+                    </button>
+                    {showFilterDropdown && (
+                      <div 
+                        className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-50 text-left"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="px-3 pb-2 mb-2 border-b border-gray-50 flex justify-between items-center text-xs text-gray-500">
+                           <span>筛选分类</span>
+                           {selectedCategories.length > 0 && (
+                             <button onClick={() => setSelectedCategories([])} className="text-klein-blue hover:underline">重置</button>
+                           )}
+                        </div>
+                        {ALL_CATEGORIES.map(cat => (
+                          <label key={cat} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedCategories.includes(cat)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedCategories([...selectedCategories, cat]);
+                                } else {
+                                  setSelectedCategories(selectedCategories.filter(c => c !== cat));
+                                }
+                              }}
+                              className="rounded border-gray-300 text-klein-blue focus:ring-klein-blue w-3.5 h-3.5"
+                            />
+                            <span className="text-sm text-gray-700">{cat}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <ScrollArea className="flex-1 custom-scrollbar" contentClassName="p-5 space-y-3">
+                  {filteredPresets.map((pq, idx) => {
+                    const replacedText = pq.text.replace(/他/g, hostName);
+                    const usedIn = questions.lastIndexOf(replacedText);
                     return (
                       <button
                         key={idx}
                         onClick={() => {
-                          updateQuestion(currentQuestionIndex, pq);
+                          updateQuestion(currentQuestionIndex, replacedText);
                           setShowPreset(false);
                         }}
-                        className="w-full text-left p-4 rounded-xl bg-gray-50/80 hover:bg-klein-blue/5 border border-gray-100 hover:border-klein-blue/20 transition-all text-sm text-gray-700 leading-relaxed group relative pb-8"
+                        className="w-full text-left p-4 pt-10 rounded-xl bg-gray-50/80 hover:bg-klein-blue/5 border border-gray-100 hover:border-klein-blue/20 transition-all text-sm text-gray-700 leading-relaxed group relative pb-8"
                       >
-                        <span className="block mb-2">{pq}</span>
+                        <div className="absolute top-3 left-3 flex gap-1">
+                          <span className="text-[12px] bg-green-500/10 text-green-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                            {pq.category}
+                          </span>
+                        </div>
+                        <span className="block mb-2">{replacedText}</span>
                         {usedIn !== -1 && (
-                          <div className="absolute bottom-2 right-2 flex gap-1">
+                          <div className="absolute bottom-3 right-3 flex gap-1">
                             <span className="text-[12px] bg-klein-blue/10 text-klein-blue px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
                               在第 {usedIn + 1} 题用过
                             </span>
@@ -249,7 +332,7 @@ export default function CreateQuestionView({
                       </button>
                     );
                   })}
-                </div>
+                </ScrollArea>
               </motion.div>
             </motion.div>
           )}

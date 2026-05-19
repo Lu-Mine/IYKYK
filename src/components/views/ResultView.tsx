@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ChevronDown, RefreshCcw, Home } from "lucide-react";
 import { getPercentageTheme, getResultFeedback, calculateResultScore } from "../../lib/quizUtils";
+import { ScrollArea } from "../ui/ScrollArea";
 
 const resultContainerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -88,7 +89,7 @@ export default function ResultView({
       exit="exit"
       className="flex flex-col flex-1 w-full min-h-0 overflow-hidden"
     >
-      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar w-full relative">
+      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="relative min-h-full">
       <div
         className={`p-8 flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br transition-colors duration-500 rounded-t-3xl ${getPercentageTheme(calculateResult()).bgOverlay}`}
       >
@@ -319,7 +320,7 @@ export default function ResultView({
           </div>
         </motion.div>
       </div>
-      </div>
+      </ScrollArea>
 
       <motion.div
         variants={resultItemVariants}

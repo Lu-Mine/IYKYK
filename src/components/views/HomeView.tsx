@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { Github, Edit2, Rocket } from "lucide-react";
+import { ScrollArea } from "../ui/ScrollArea";
 
 interface HomeViewProps {
   hostName: string;
@@ -77,7 +78,7 @@ export default function HomeView({ hostName, userName, setUserName, handleStart,
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-8 pb-10 flex flex-col relative">
+      <ScrollArea className="flex-1 custom-scrollbar" contentClassName="p-8 pb-10 flex flex-col relative min-h-full">
         <div className="w-full">
           <motion.div
             variants={{
@@ -146,7 +147,7 @@ export default function HomeView({ hostName, userName, setUserName, handleStart,
             </p>
           </motion.div>
         </div>
-      </div>
+      </ScrollArea>
 
       <motion.div
         variants={{
@@ -168,7 +169,7 @@ export default function HomeView({ hostName, userName, setUserName, handleStart,
           type="text"
           placeholder="请输入你的昵称"
           maxLength={10}
-          className="select-none w-full px-4 py-3 rounded-xl border border-white/50 focus:outline-none focus:ring-2 focus:ring-green-forest focus:border-transparent transition-all text-center bg-white/60 shadow-sm backdrop-blur-sm"
+          className="select-text w-full px-4 py-3 rounded-xl border border-white/50 focus:outline-none focus:ring-2 focus:ring-green-forest focus:border-transparent transition-all text-center bg-white/60 shadow-sm backdrop-blur-sm"
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleStart()}

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, Reorder, AnimatePresence, useDragControls } from "motion/react";
 import { GripVertical, Rocket, ArrowUp, Plus, Settings } from "lucide-react";
 import { getScoreStyles } from "../../lib/quizUtils";
+import { ScrollArea } from "../ui/ScrollArea";
 
 interface Props {
   questions: string[];
@@ -34,7 +35,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ item, visualIndex, setCurre
     >
       <div 
         onPointerDown={(e) => dragControls.start(e)}
-        className="w-10 bg-gray-50/80 flex items-center justify-center cursor-grab text-gray-400 group-hover:text-klein-blue/50 transition-colors border-r border-gray-100/50"
+        className="w-10 bg-gray-50/80 flex items-center justify-center cursor-grab text-gray-400 group-hover:text-klein-blue/50 transition-colors border-r border-gray-100/50 touch-none"
       >
         <GripVertical size={16} />
       </div>
@@ -119,7 +120,7 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
       <div className="pt-8 px-8 pb-4 shrink-0 border-b border-gray-100/50 bg-white/30 backdrop-blur-sm z-10 flex justify-between items-end relative">
         <div>
           <h2 className="text-xl font-bold font-display text-klein-blue">完成试卷之前</h2>
-          <p className="text-sm text-gray-500 mt-1">检查你出的题目，拖拽左侧调整顺序</p>
+          <p className="text-sm text-gray-500 mt-1">检查、编辑或拖拽调整题目</p>
         </div>
         <div className="flex flex-col gap-3">
           <button className="text-sm text-gray-400 hover:text-klein-blue flex justify-end items-center gap-1 transition-colors self-end cursor-default">设置 <Settings size={16} /></button>
@@ -127,7 +128,7 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-6">
+      <ScrollArea className="flex-1 custom-scrollbar" contentClassName="p-6 relative min-h-full">
         <Reorder.Group 
           axis="y" 
           values={items} 
@@ -143,7 +144,7 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
             />
           ))}
         </Reorder.Group>
-      </div>
+      </ScrollArea>
 
       <motion.div
         className="p-6 bg-white/40 border-t border-white/40 flex items-center shrink-0 z-20 backdrop-blur-md gap-4"
