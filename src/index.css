@@ -1,18 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Outfit:wght@700;800&family=Noto+Serif+SC:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Caladea:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Outfit:wght@700;800&family=Noto+Serif+SC:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Caladea:ital,wght@0,400;0,700;1,400;1,700&family=Cinzel:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Inter', 'Noto Sans SC', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Playfair Display', 'Noto Serif SC', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-display: 'Outfit', sans-serif;
+  --font-cinzel: 'Cinzel', serif;
   --color-green-morandi: #E8F5E9;
   --color-green-forest: #4CAF50;
   --color-green-dark: #2E7D32;
   --color-gray-dark: #333333;
 
   --animate-rainbow: rainbow 4s ease infinite;
+  --animate-bg-pan: bg-pan 15s ease infinite;
 
   @keyframes rainbow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes bg-pan {
     0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
   }
@@ -42,6 +49,30 @@ button {
   }
 }
 
+@layer base {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background: transparent;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-track-piece {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #4CAF5066;
+    border-radius: 10px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #4CAF50CC;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #4CAF5080 transparent;
+  }
+}
+
 @layer utilities {
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
@@ -52,25 +83,7 @@ button {
   }
   
   .custom-scrollbar {
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #4CAF5080 transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track,
-  .custom-scrollbar::-webkit-scrollbar-track-piece {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #4CAF5066;
-    border-radius: 10px;
-    background-clip: padding-box;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #4CAF50CC;
+    /* Use overlay to make scrollbars float and not take up layout space */
+    overflow-y: overlay !important;
   }
 }
