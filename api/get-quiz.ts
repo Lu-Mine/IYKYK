@@ -5,36 +5,26 @@ export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const quizId = searchParams.get('quizId');
+export default async function handler(req: any, res: any) {
+  const quizId = req.query.quizId;
 
   if (!quizId) {
-    return new Response(JSON.stringify({ error: 'Quiz ID is required' }), {
-      status: 400,
-      headers: { 'content-type': 'application/json' },
-    });
+    return res.status(400).json({ error: 'Quiz ID is required' });
   }
 
   try {
     const quizData = await kv.get(`quiz:${quizId}`);
 
     if (!quizData) {
-      return new Response(JSON.stringify({ error: 'Quiz not found' }), {
-        status: 404,
-        headers: { 'content-type': 'application/json' },
-      });
+      return res.status(404).json({ error: 'Quiz not found' });
     }
 
-    return new Response(JSON.stringify(quizData), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    });
+    // Strip secret before returning
+    const { secret, ...safeQuizData } = quizData as any;
+
+    return res.status(200).json(safeQuizData);
   } catch (error) {
     console.error('Failed to fetch quiz:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

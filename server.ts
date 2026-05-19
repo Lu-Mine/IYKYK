@@ -3,7 +3,9 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import createQuizHandler from './api/create-quiz.js';
+import getQuizHandler from './api/get-quiz.js';
 import submitHandler from './api/submit.js';
+import resultsHandler from './api/results.js';
 
 async function startServer() {
   const app = express();
@@ -21,9 +23,27 @@ async function startServer() {
     }
   });
 
+  app.get('/api/get-quiz', async (req, res) => {
+    try {
+      await (getQuizHandler as any)(req, res);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
   app.post('/api/submit', async (req, res) => {
     try {
       await (submitHandler as any)(req, res);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+  app.get('/api/results', async (req, res) => {
+    try {
+      await (resultsHandler as any)(req, res);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Internal Server Error' });

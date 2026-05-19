@@ -5,9 +5,9 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, title, description, questions, hostScores, createdAt, deviceInfo } = req.body;
+  const { userId, title, description, questions, hostScores, createdAt, deviceInfo, secret } = req.body;
 
-  if (!userId || !title || !questions || !hostScores) {
+  if (!userId || !title || !questions || !hostScores || !secret) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
@@ -20,6 +20,7 @@ export default async function handler(req: any, res: any) {
       hostScores,
       createdAt,
       deviceInfo,
+      secret,
     };
 
     await kv.set(`quiz:${userId}`, JSON.stringify(quizData));

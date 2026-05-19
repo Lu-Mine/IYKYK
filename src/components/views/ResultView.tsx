@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronDown, RefreshCcw, Home } from "lucide-react";
+import { ChevronDown, RefreshCcw, Home, Lock, Eye, Users, Search } from "lucide-react";
 import { getPercentageTheme, getResultFeedback, calculateResultScore } from "../../lib/quizUtils";
 import { ScrollArea } from "../ui/ScrollArea";
+import { fetchResults } from "../../lib/api";
 
 const resultContainerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -78,6 +79,38 @@ export default function ResultView({
 
     return { matches, gaps };
   }, [userScores, quizData]);
+
+  // Admin View State
+  const [isAdminViewOpen, setIsAdminViewOpen] = useState(false);
+  const [adminSecret, setAdminSecret] = useState("");
+  const [adminResults, setAdminResults] = useState<any[] | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
+
+  const getQuizId = () => {
+    const path = window.location.pathname;
+    if (path.includes('/customquiz/')) {
+      return path.split('/customquiz/')[1];
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id') || 'default_quiz';
+  };
+
+  const currentQuizId = getQuizId();
+
+  const handleFetchResults = async () => {
+    if (!adminSecret.trim()) return;
+    setIsAdminLoading(true);
+    setAdminError(null);
+    try {
+      const results = await fetchResults(currentQuizId, adminSecret);
+      setAdminResults(results);
+    } catch (err: any) {
+      setAdminError(err.message || '获取结果失败，可能是密语错误');
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -318,6 +351,113 @@ export default function ResultView({
               </div>
             )}
           </div>
+        </motion.div>
+
+        {/* Creator / Admin Section */}
+        <motion.div
+           variants={resultItemVariants}
+           className="w-full mt-10 space-y-4 pb-10"
+        >
+          <div className="select-none flex items-center gap-2 px-1">
+            <div className="h-px flex-grow bg-gray-200"></div>
+            <span className="text-[12px] uppercase tracking-widest text-gray-400 font-bold whitespace-nowrap">
+              出题人权限 · AUTHOR ONLY
+            </span>
+            <div className="h-px flex-grow bg-gray-200"></div>
+          </div>
+
+          {!isAdminViewOpen ? (
+            <button
+              onClick={() => setIsAdminViewOpen(true)}
+              className="w-full py-4 bg-gray-50 border border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-500 hover:bg-gray-100 hover:border-gray-400 transition-all group"
+            >
+              <Lock size={20} className="group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium">查看朋友的答题结果</span>
+            </button>
+          ) : !adminResults ? (
+            <div className="bg-white/60 backdrop-blur-md border border-white/50 rounded-2xl p-6 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 text-gray-700 mb-2">
+                <Eye size={18} />
+                <span className="font-bold text-sm">请输入密语以解锁结果</span>
+              </div>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={adminSecret}
+                  onChange={(e) => setAdminSecret(e.target.value)}
+                  placeholder="请输入您出题时设置的密语"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-klein-blue/30 focus:border-klein-blue/50 transition-all text-sm"
+                  onKeyDown={(e) => e.key === 'Enter' && handleFetchResults()}
+                />
+              </div>
+              {adminError && (
+                <p className="text-xs text-red-500 font-medium">{adminError}</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsAdminViewOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 text-sm font-medium transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleFetchResults}
+                  disabled={isAdminLoading || !adminSecret}
+                  className="flex-[2] py-2.5 rounded-xl bg-klein-blue text-white text-sm font-bold shadow-md shadow-klein-blue/20 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:shadow-none"
+                >
+                  {isAdminLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Search size={16} />
+                  )}
+                  验证并查看
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white/60 backdrop-blur-md border border-white/50 rounded-2xl p-4 shadow-sm space-y-3 max-h-[400px] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <div className="flex items-center gap-2 text-green-700">
+                  <Users size={18} />
+                  <span className="font-bold text-sm">已收到 {adminResults.length} 份回答</span>
+                </div>
+                <button 
+                  onClick={() => { setAdminResults(null); setAdminSecret(""); }}
+                  className="text-[11px] text-gray-400 hover:text-gray-600 underline"
+                >
+                  退出查看
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                {adminResults.length === 0 ? (
+                  <div className="py-10 text-center text-gray-400 text-sm">
+                    暂无朋友回答，快去分享吧！
+                  </div>
+                ) : (
+                  adminResults.map((res: any, idx: number) => {
+                    const data = typeof res === 'string' ? JSON.parse(res) : res;
+                    const score = calculateResultScore(data.participantScores, quizData.hostScores, quizData.questions.length);
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-white/50 rounded-xl border border-white/40">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-gray-800">{data.participantName}</span>
+                          <span className="text-[10px] text-gray-400">
+                            {new Date(data.createdAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`px-2.5 py-1 rounded-lg text-sm font-black ${getPercentageTheme(score).bgOverlay} ${getPercentageTheme(score).color.replace('text-', 'text-')}`}>
+                            {score}%
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
       </ScrollArea>

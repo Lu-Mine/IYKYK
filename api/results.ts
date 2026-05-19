@@ -5,30 +5,27 @@ export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const quizId = searchParams.get('quizId');
+export default async function handler(req: any, res: any) {
+  const quizId = req.query.quizId;
+  const secret = req.query.secret;
 
   if (!quizId) {
-    return new Response(JSON.stringify({ error: 'Quiz ID is required' }), {
-      status: 400,
-      headers: { 'content-type': 'application/json' },
-    });
+    return res.status(400).json({ error: 'Quiz ID is required' });
   }
 
   try {
+    // Verify secret
+    const quizData: any = await kv.get(`quiz:${quizId}`);
+    if (!quizData || quizData.secret !== secret) {
+      return res.status(401).json({ error: 'Unauthorized: Incorrect secret' });
+    }
+
     // 获取当前 quizId 的所有回答
     const responses = await kv.lrange(`responses:${quizId}`, 0, -1);
 
-    return new Response(JSON.stringify(responses || []), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    });
+    return res.status(200).json(responses || []);
   } catch (error) {
     console.error('Failed to fetch results:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

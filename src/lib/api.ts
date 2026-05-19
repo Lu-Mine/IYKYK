@@ -76,3 +76,17 @@ export async function fetchQuiz(quizId: string) {
 
   return await response.json();
 }
+
+/**
+ * 获取试卷的所有回答（需要密语）
+ */
+export async function fetchResults(quizId: string, secret: string) {
+  const response = await fetch(`/api/results?quizId=${quizId}&secret=${secret}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch results');
+  }
+
+  return await response.json();
+}
