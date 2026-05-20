@@ -99,6 +99,19 @@ export const getRandomQuestions = (presets: {text: string, category: string}[], 
   return picked.map(p => p.text).sort(() => Math.random() - 0.5);
 };
 
+export const getScoreColorText = (s: number) => {
+  switch (s) {
+    case 1: return "text-red-600";
+    case 2: return "text-orange-600";
+    case 3: return "text-amber-600";
+    case 4: return "text-yellow-600";
+    case 5: return "text-lime-600";
+    case 6: return "text-emerald-600";
+    case 7: return "text-green-600";
+    default: return "text-green-forest";
+  }
+};
+
 export const getScoreStyles = (s: number, isSelected: boolean) => {
   if (isSelected) {
     switch (s) {

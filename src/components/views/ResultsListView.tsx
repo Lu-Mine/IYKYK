@@ -67,38 +67,32 @@ export default function ResultsListView({ results, onBack, onReview, hostScores 
                 <div
                   key={record.id}
                   onClick={() => onReview(record)}
-                  className="relative bg-white/50 backdrop-blur-sm border border-white/50 hover:border-green-300 hover:bg-white/80 p-5 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all shadow-sm min-h-[9rem] group z-auto active:scale-[0.99]"
+                  className="relative bg-white/50 backdrop-blur-sm border border-white/50 hover:border-green-300 hover:bg-white/80 p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-colors shadow-sm group z-auto active:scale-[0.99]"
                 >
-                  {/* Top Left ID */}
-                  <div className="absolute top-2 left-3 font-display font-black text-xl text-gray-200 group-hover:text-green-forest/40 transition-colors z-20">
-                    {results.length - idx}
-                  </div>
-                  
-                  {/* Center Content */}
-                  <div className="text-center space-y-1">
-                    <div className="text-lg font-bold text-gray-700">{record.participantName}</div>
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-                      <Clock size={12} />
-                      <span>{formatDate(record.createdAt)}</span>
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="font-display font-black text-2xl text-gray-200 group-hover:text-green-forest/40 transition-colors shrink-0 w-8 text-center">
+                      {results.length - idx}
+                    </div>
+                    
+                    <div className="flex flex-col text-left min-w-0">
+                      <div className="text-base sm:text-lg font-bold text-gray-700 truncate">{record.participantName}</div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
+                        <Clock size={12} />
+                        <span>{formatDate(record.createdAt)}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Bottom Right Score Percentage */}
-                  <div 
-                    className="absolute bottom-3 right-4 flex flex-col items-end"
-                  >
-                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Score</span>
-                    <div className="flex items-baseline gap-0.5">
-                      <span className="text-2xl font-black text-green-forest group-hover:scale-110 transition-transform">
-                        {Math.round(score)}
-                      </span>
-                      <span className="text-xs font-bold text-gray-300">%</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="text-right">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block mb-0.5">Score</span>
+                      <div className="flex items-baseline justify-end gap-0.5 mt-[-4px]">
+                        <span className="text-xl sm:text-2xl font-black text-green-forest group-hover:scale-110 transition-transform">
+                          {Math.round(score)}
+                        </span>
+                        <span className="text-xs font-bold text-gray-300">%</span>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Subtle Record ID at Bottom Left */}
-                  <div className="absolute bottom-3 left-4 font-mono text-[9px] text-gray-200 uppercase tracking-tighter">
-                    ID: {record.id.slice(-6)}
                   </div>
                 </div>
               );

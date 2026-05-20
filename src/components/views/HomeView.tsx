@@ -62,20 +62,13 @@ export default function HomeView({
   onViewResults,
   isLoadingResults
 }: HomeViewProps & { onEnterCreateMode?: () => void }) {
-  const [showSecretModal, setShowSecretModal] = useState(false);
-  const [secret, setSecret] = useState("");
-  const [secretError, setSecretError] = useState("");
-
-  const handleSecretSubmit = async () => {
-    if (!secret.trim() || !onViewResults) return;
-    setSecretError("");
-    try {
-      await onViewResults(secret);
-      setShowSecretModal(false);
-    } catch (err: any) {
-      setSecretError(err.message || "密语验证失败");
-    }
-  };
+  const isCustomQuiz = typeof window !== "undefined" && (() => {
+    const path = window.location.pathname;
+    const match = path.match(/\/customquiz\/([^/?#]+)/);
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchId = urlParams.get('id');
+    return !!((match && match[1]) || searchId);
+  })();
 
   return (
     <motion.div
@@ -113,7 +106,7 @@ export default function HomeView({
         </div>
       )}
 
-      <ScrollArea className="flex-1 custom-scrollbar" contentClassName="p-8 pb-10 flex flex-col relative min-h-full">
+      <ScrollArea className="flex-1 custom-scrollbar" contentClassName="p-8 pb-2 flex flex-col relative">
         <div className="w-full">
           <motion.div
             variants={{
@@ -178,8 +171,15 @@ export default function HomeView({
                 <span className="text-sm font-normal text-gray-500 text-center">和</span>
                 <span className="text-left text-base font-bold bg-gradient-to-r from-emerald-500 to-green-400 bg-clip-text text-transparent">你对我作的评价</span>
               </div>
-              <div className="items-center"> 这样就能知道我心目中的自己和你眼里的我有怎样的差距。 </div>
+              <div className="items-center"> 这样就能知道我心目中的自己和你眼里的我有怎样的差距。凭你的第一直觉作答即可，不需要花太多时间纠结。这本身就是一个主观视角的碰撞。 </div>
             </blockquote>
+            {!isCustomQuiz && (
+              <p className="text-[13px] text-gray-400 text-justify leading-snug tracking-tight">
+                Tips: 这个项目我自己完成了功能逻辑、交互设计，以及你看到的这组范例试卷的自评测算。当然了，要落地这个，还得拜托（指挥）我最近很喜欢用的
+                <a href="https://ai.studio/build" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-500">Google Gemini</a>
+                帮我编写代码调试。我挺喜欢的，至少比豆包聪明。
+              </p>
+            )}
           </motion.div>
         </div>
       </ScrollArea>
@@ -217,77 +217,7 @@ export default function HomeView({
           <Rocket size={20} /> 开始挑战
         </button>
 
-        <button
-          onClick={() => setShowSecretModal(true)}
-          className="w-full bg-[#ecfdf5] hover:bg-green-50 text-green-700 font-bold text-sm py-2.5 rounded-xl transition-all border border-green-100 flex items-center justify-center gap-2 mt-1"
-        >
-          <Users size={16} /> 查看好友答题
-        </button>
       </motion.div>
-
-      {/* Secret Word Modal */}
-      <AnimatePresence>
-        {showSecretModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/20 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden"
-            >
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-gray-800">密语验证</h3>
-                  <button 
-                    onClick={() => { setShowSecretModal(false); setSecret(""); setSecretError(""); }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <p className="text-sm text-gray-500 mb-6">请输入这套试卷的密语，以查看其他人的答题记录。</p>
-                
-                <div className="space-y-4">
-                  <div className="relative">
-                    <input
-                      type="password"
-                      placeholder="输入密语"
-                      className={`w-full px-4 py-3 rounded-xl bg-gray-50 border transition-all focus:outline-none text-center ${
-                        secretError ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-green-500'
-                      }`}
-                      value={secret}
-                      onChange={(e) => { setSecret(e.target.value); setSecretError(""); }}
-                      onKeyDown={(e) => e.key === "Enter" && handleSecretSubmit()}
-                    />
-                    {secretError && (
-                      <p className="text-[10px] text-red-500 mt-1.5 ml-1 text-center font-medium">{secretError}</p>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={handleSecretSubmit}
-                    disabled={!secret.trim() || isLoadingResults}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-                  >
-                    {isLoadingResults ? (
-                      <Loader2 size={18} className="animate-spin" />
-                    ) : (
-                      <>
-                        验证并查看 <ChevronRight size={18} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }

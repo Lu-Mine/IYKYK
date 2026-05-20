@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import confetti from "canvas-confetti";
-import { ArrowLeft, Home, Rocket, Edit2 } from "lucide-react";
+import { ArrowLeft, Home, Rocket, Edit2, Users, X, ChevronRight, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { HOST_NAME, HOST_SCORES, QUESTIONS } from "./lib/constants";
 import { calculateResultScore } from "./lib/quizUtils";
@@ -135,6 +135,19 @@ export default function App() {
   const [quizLoadError, setQuizLoadError] = useState<string | null>(null);
 
   const [commitHash, setCommitHash] = useState("main");
+
+  const [showSecretModal, setShowSecretModal] = useState(false);
+  const [secret, setSecret] = useState("");
+  const [secretError, setSecretError] = useState("");
+
+  const isCustomQuiz = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const path = window.location.pathname;
+    const match = path.match(/\/customquiz\/([^/?#]+)/);
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchId = urlParams.get('id');
+    return !!((match && match[1]) || searchId);
+  }, []);
 
   useEffect(() => {
     fetch('https://api.github.com/repos/Lu-Mine/IYKYK/commits/main')
@@ -473,6 +486,18 @@ export default function App() {
     }
   };
 
+  const handleSecretSubmit = async () => {
+    if (!secret.trim()) return;
+    setSecretError("");
+    try {
+      await handleViewResults(secret);
+      setShowSecretModal(false);
+      setSecret("");
+    } catch (err: any) {
+      setSecretError(err.message || "密语验证失败");
+    }
+  };
+
   const handleReviewResponse = (record: any) => {
     setReviewResult(record);
     setUserScores(record.participantScores);
@@ -724,22 +749,33 @@ export default function App() {
 
       <div className="flex-1 w-full max-w-[480px] flex flex-col justify-start relative z-10 pointer-events-none">
         <AnimatePresence>
-          {!isCreatingMode && view === "home" && savedResult && (
+          {!isCreatingMode && view === "home" && (savedResult || isCustomQuiz) && (
             <motion.div 
               key="home-recover"
               initial={{ opacity: 0, y: 16, pointerEvents: "none" }}
               animate={{ opacity: 1, y: 0, pointerEvents: "auto" }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
               transition={{ delay: 0.35, duration: 0.25, ease: "easeOut" }}
-              className="pt-6 flex justify-center pointer-events-auto"
+              className="pt-6 flex justify-center gap-4 pointer-events-auto"
             >
-              <button
-                onClick={restoreResult}
-                className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-green-dark/5"
-              >
-                <ArrowLeft size={16} />
-                找回刚才的结果
-              </button>
+              {isCustomQuiz && (
+                <button
+                  onClick={() => setShowSecretModal(true)}
+                  className="text-sm font-medium text-klein-blue hover:text-klein-blue-light transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-klein-blue/5"
+                >
+                  <Users size={16} />
+                  查看好友答题
+                </button>
+              )}
+              {savedResult && (
+                <button
+                  onClick={restoreResult}
+                  className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-green-dark/5"
+                >
+                  <ArrowLeft size={16} />
+                  找回刚才的结果
+                </button>
+              )}
             </motion.div>
           )}
 
@@ -791,6 +827,75 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Secret Word Modal */}
+      <AnimatePresence>
+        {showSecretModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => { setShowSecretModal(false); setSecret(""); setSecretError(""); }}
+            className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm pointer-events-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2, type: "spring", bounce: 0.3 }}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-xl flex flex-col items-center"
+            >
+              <div className="w-12 h-12 bg-klein-blue/10 text-klein-blue rounded-full flex items-center justify-center mb-4">
+                <Users size={24} />
+              </div>
+              <h3 className="text-xl font-extrabold text-gray-800 mb-2">密语验证</h3>
+              <p className="text-gray-500 text-center text-sm mb-6">请输入这套试卷的密语，以查看其他人的答题记录。</p>
+              
+              <div className="space-y-4 w-full">
+                <div className="relative">
+                  <input
+                    type="password"
+                    placeholder="输入密语"
+                    className={`w-full px-4 py-3 rounded-xl bg-gray-50 border transition-all focus:outline-none text-center ${
+                      secretError ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-klein-blue'
+                    }`}
+                    value={secret}
+                    onChange={(e) => { setSecret(e.target.value); setSecretError(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSecretSubmit()}
+                  />
+                  {secretError && (
+                    <p className="text-[10px] text-red-500 mt-1.5 ml-1 text-center font-medium">{secretError}</p>
+                  )}
+                </div>
+
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => { setShowSecretModal(false); setSecret(""); setSecretError(""); }}
+                    className="flex-1 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-bold transition-colors text-sm"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleSecretSubmit}
+                    disabled={!secret.trim() || isLoadingResults}
+                    className="flex-1 py-2.5 rounded-xl text-white bg-klein-blue hover:bg-klein-blue-light font-bold shadow-md shadow-klein-blue/20 transition-all flex items-center justify-center gap-1.5 text-sm"
+                  >
+                    {isLoadingResults ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <>
+                        验证并查看 <ChevronRight size={16} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { getScoreStyles } from "../../lib/quizUtils";
+import { getScoreStyles, getScoreColorText } from "../../lib/quizUtils";
 import { ScrollArea } from "../ui/ScrollArea";
 
 interface OverviewViewProps {
@@ -60,15 +60,16 @@ export default function OverviewView({
                 <div
                   key={idx}
                   onClick={() => {
+                    if (isReviewMode) return;
                     setCurrentQuestion(idx);
                     setView("quiz");
                   }}
-                  className={`relative bg-white/50 backdrop-blur-sm border border-white/50 hover:border-green-300 hover:bg-white/80 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto`}
+                  className={`relative ${isReviewMode ? 'cursor-default' : 'cursor-pointer hover:border-green-300 hover:bg-white/80'} bg-white/50 backdrop-blur-sm border border-white/50 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto`}
                 >
                   <div className="absolute top-1 left-2 font-display font-black text-lg sm:text-xl text-gray-300 group-hover:text-green-forest/40 transition-colors z-20">
                     {idx + 1}
                   </div>
-                  {isReviewMode && hostScores && (
+                  {isReviewMode && hostScores && diff > 0 && (
                     <div className="absolute top-1.5 right-2 text-[10px] sm:text-xs font-bold text-red-400 group-hover:text-red-500 transition-colors z-20">
                       差 {diff} 分
                     </div>
@@ -76,10 +77,15 @@ export default function OverviewView({
                   <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-3 mt-0">
                     {question}
                   </div>
-                  <div 
-                    className={`absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(userScores[idx], true)} group-hover:scale-110 transition-transform z-30 opacity-100`}
-                  >
-                    {userScores[idx]}
+                  <div className="absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 flex items-center gap-1.5 z-30 opacity-100">
+                    {isReviewMode && hostScores && diff > 0 && (
+                      <div className={`text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg border-2 border-klein-blue bg-transparent ${getScoreColorText(hostScores[idx])}`}>
+                        {hostScores[idx]}
+                      </div>
+                    )}
+                    <div className={`text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(userScores[idx], true)} ${isReviewMode ? '' : 'group-hover:scale-110'} transition-transform`}>
+                      {userScores[idx]}
+                    </div>
                   </div>
                 </div>
               );
@@ -93,15 +99,16 @@ export default function OverviewView({
                 <div
                   key={idx}
                   onClick={() => {
+                    if (isReviewMode) return;
                     setCurrentQuestion(idx);
                     setView("quiz");
                   }}
-                  className={`relative bg-white/50 backdrop-blur-sm border border-white/50 hover:border-green-300 hover:bg-white/80 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto`}
+                  className={`relative ${isReviewMode ? 'cursor-default' : 'cursor-pointer hover:border-green-300 hover:bg-white/80'} bg-white/50 backdrop-blur-sm border border-white/50 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto`}
                 >
                   <div className="absolute top-1 left-2 font-display font-black text-lg sm:text-xl text-gray-300 group-hover:text-green-forest/40 transition-colors z-20">
                     {idx + 1}
                   </div>
-                  {isReviewMode && hostScores && (
+                  {isReviewMode && hostScores && diff > 0 && (
                     <div className="absolute top-1.5 right-2 text-[10px] sm:text-xs font-bold text-red-400 group-hover:text-red-500 transition-colors z-20">
                       差 {diff} 分
                     </div>
@@ -109,10 +116,15 @@ export default function OverviewView({
                   <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-3 mt-0">
                     {question}
                   </div>
-                  <div 
-                    className={`absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(userScores[idx], true)} group-hover:scale-110 transition-transform z-30 opacity-100`}
-                  >
-                    {userScores[idx]}
+                  <div className="absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 flex items-center gap-1.5 z-30 opacity-100">
+                    {isReviewMode && hostScores && diff > 0 && (
+                      <div className={`text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg border-2 border-klein-blue bg-transparent ${getScoreColorText(hostScores[idx])}`}>
+                        {hostScores[idx]}
+                      </div>
+                    )}
+                    <div className={`text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(userScores[idx], true)} ${isReviewMode ? '' : 'group-hover:scale-110'} transition-transform`}>
+                      {userScores[idx]}
+                    </div>
                   </div>
                 </div>
               );

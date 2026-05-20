@@ -4,6 +4,43 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IYKYK | 来自小测验主人的 Quiz</title>
+    <script>
+      // Gracefully catch and suppress benign development WebSocket and Vite HMR rejections/errors
+      // to keep the dev server connection warnings from flashing overlays or causing unhandled rejects.
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason) {
+          const reasonStr = String(event.reason || '');
+          const msg = typeof event.reason === 'string' ? event.reason : (event.reason.message || reasonStr);
+          if (
+            msg.toLowerCase().includes('websocket') ||
+            msg.toLowerCase().includes('vite') ||
+            msg.toLowerCase().includes('ws://') ||
+            msg.toLowerCase().includes('wss://') ||
+            reasonStr.toLowerCase().includes('websocket') ||
+            reasonStr.toLowerCase().includes('vite')
+          ) {
+            console.warn('[Benign Dev WebSocket Rejection Catch]:', event.reason);
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+        }
+      }, true); // Use useCapture to intercept as early as possible
+      window.addEventListener('error', function(event) {
+        const msg = event.message || '';
+        if (
+          msg.toLowerCase().includes('websocket') ||
+          msg.toLowerCase().includes('vite') ||
+          msg.toLowerCase().includes('ws://') ||
+          msg.toLowerCase().includes('wss://')
+        ) {
+          console.warn('[Benign Dev WebSocket Error Catch]:', msg);
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+        }
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>

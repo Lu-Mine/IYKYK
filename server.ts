@@ -11,6 +11,19 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  console.log('=== [Diagnostic] Checking Environment Variables ===');
+  const kvUrl = process.env.KV_REST_API_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN;
+  console.log('KV_REST_API_URL configured:', kvUrl ? `Yes (length: ${kvUrl.length})` : 'No');
+  console.log('KV_REST_API_TOKEN configured:', kvToken ? `Yes (length: ${kvToken.length})` : 'No');
+  if (kvUrl) {
+    console.log('KV_REST_API_URL prefix:', kvUrl.substring(0, 15) + '...');
+    if (kvUrl.startsWith('"') || kvUrl.startsWith("'")) {
+      console.warn('WARNING: KV_REST_API_URL starts with quotation marks! This might cause connection errors.');
+    }
+  }
+  console.log('==================================================');
+
   app.use(express.json());
 
   // API routes
