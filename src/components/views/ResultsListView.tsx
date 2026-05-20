@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { ArrowLeft, User, Clock } from "lucide-react";
 import { ScrollArea } from "../ui/ScrollArea";
-import { calculateResultScore } from "../../lib/quizUtils";
+import { calculateResultScore, getPercentageTheme } from "../../lib/quizUtils";
 import { HOST_SCORES } from "../../lib/constants";
 
 interface ResultRecord {
@@ -53,8 +53,8 @@ export default function ResultsListView({ results, onBack, onReview, hostScores 
         </p>
       </div>
 
-      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="px-6 pb-24 relative min-h-full">
-        <div className="space-y-4 mt-6">
+      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="px-6 relative min-h-full">
+        <div className="space-y-4 mt-2">
           {sortedResults.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <User size={48} className="opacity-20 mb-4" />
@@ -64,15 +64,16 @@ export default function ResultsListView({ results, onBack, onReview, hostScores 
             sortedResults.map((record, idx) => {
               const pScores = record.participantScores || [];
               const score = calculateResultScore(pScores, hostScores, pScores.length || hostScores.length);
+              const theme = getPercentageTheme(score);
               return (
                 <div
                   key={record.id || idx}
                   onClick={() => onReview(record)}
-                  className="relative bg-white/50 backdrop-blur-sm border border-white/50 hover:border-green-300 hover:bg-white/80 p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-colors shadow-sm group z-auto active:scale-[0.99]"
+                  className="relative bg-white/50 backdrop-blur-sm border border-white/50 hover:border-klein-blue/30 hover:bg-white/80 p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-colors shadow-sm group z-auto active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="font-display font-black text-2xl text-gray-200 group-hover:text-green-forest/40 transition-colors shrink-0 w-8 text-center">
-                      {results.length - idx}
+                    <div className="font-display font-black text-2xl text-gray-200 group-hover:text-klein-blue/40 transition-colors shrink-0 w-8 text-center">
+                       {results.length - idx}
                     </div>
                     
                     <div className="flex flex-col text-left min-w-0">
@@ -87,11 +88,10 @@ export default function ResultsListView({ results, onBack, onReview, hostScores 
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-right">
                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block mb-0.5">Score</span>
-                      <div className="flex items-baseline justify-end gap-0.5 mt-[-4px]">
-                        <span className="text-xl sm:text-2xl font-black text-green-forest group-hover:scale-110 transition-transform">
-                          {Math.round(score)}
+                      <div className="flex items-baseline justify-end font-display font-extrabold tracking-tighter mt-[-4px]">
+                        <span className={`text-xl sm:text-2xl bg-gradient-to-br ${theme.gradient} bg-clip-text text-transparent group-hover:scale-110 transition-transform`}>
+                          {Math.round(score)}%
                         </span>
-                        <span className="text-xs font-bold text-gray-300">%</span>
                       </div>
                     </div>
                   </div>
@@ -105,7 +105,7 @@ export default function ResultsListView({ results, onBack, onReview, hostScores 
       <div className="p-6 bg-white/40 border-t border-white/40 flex-shrink-0 z-30 w-full backdrop-blur-md">
         <button
           onClick={onBack}
-          className="w-full py-3.5 bg-white text-gray-500 border border-gray-100 rounded-xl font-bold text-lg shadow-sm hover:bg-gray-50 hover:text-green-600 transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3.5 bg-white text-gray-500 border border-gray-100 rounded-xl font-bold text-lg shadow-sm hover:bg-gray-50 hover:text-klein-blue transition-colors flex items-center justify-center gap-2"
         >
           <ArrowLeft size={18} /> 返回主页
         </button>

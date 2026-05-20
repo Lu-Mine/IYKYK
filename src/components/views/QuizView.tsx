@@ -1,4 +1,5 @@
-import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getScoreStyles } from "../../lib/quizUtils";
 import { ScrollArea } from "../ui/ScrollArea";
@@ -12,6 +13,7 @@ interface QuizViewProps {
   isTransitioning: boolean;
   handleScore: (score: number) => void;
   handlePrev: () => void;
+  handleNext?: () => void;
   isReviewMode?: boolean;
   correctScores?: number[];
   onBackToOverview?: () => void;
@@ -26,28 +28,67 @@ export default function QuizView({
   isTransitioning,
   handleScore,
   handlePrev,
+  handleNext,
   isReviewMode,
   correctScores,
   onBackToOverview,
 }: QuizViewProps) {
+  useEffect(() => {
+    if (!isReviewMode) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTransitioning) return;
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (currentQuestion > 0) {
+          handlePrev();
+        }
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (currentQuestion < totalQuestions - 1 && handleNext) {
+          handleNext();
+        }
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (onBackToOverview) {
+          onBackToOverview();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    isReviewMode,
+    isTransitioning,
+    currentQuestion,
+    totalQuestions,
+    handlePrev,
+    handleNext,
+    onBackToOverview,
+  ]);
+
   const getReviewStyles = (score: number) => {
     const isRespondentChoice = userScores[currentQuestion] === score;
     const isCorrectChoice = correctScores && correctScores[currentQuestion] === score;
 
-    if (isRespondentChoice) {
+    if (isCorrectChoice) {
       return getScoreStyles(score, true);
     }
 
-    if (isCorrectChoice) {
-      // Highlight text and border only, no background
+    if (isRespondentChoice) {
+      // Swapped highlight: respondent's choice is now outline/low-intensity
       const styles: Record<number, string> = {
-        1: "text-[#eb776c] border-[#fdecea] ring-2 ring-[#eb776c]/40",
-        2: "text-[#edab85] border-[#fdf3ec] ring-2 ring-[#edab85]/40",
-        3: "text-[#f3cd82] border-[#fdf8ec] ring-2 ring-[#f3cd82]/40",
-        4: "text-[#a6ad91] border-[#f6f7f4] ring-2 ring-[#a6ad91]/40",
-        5: "text-[#8cb8b3] border-[#ecf3f2] ring-2 ring-[#8cb8b3]/40",
-        6: "text-[#8397c4] border-[#ebedf4] ring-2 ring-[#8397c4]/40",
-        7: "text-[#9783ba] border-[#efebf4] ring-2 ring-[#9783ba]/40",
+        1: "text-[#eb776c] border-[#eb776c] ring-2 ring-[#eb776c]/40",
+        2: "text-[#edab85] border-[#edab85] ring-2 ring-[#edab85]/40",
+        3: "text-[#f3cd82] border-[#f3cd82] ring-2 ring-[#f3cd82]/40",
+        4: "text-[#a6ad91] border-[#a6ad91] ring-2 ring-[#a6ad91]/40",
+        5: "text-[#8cb8b3] border-[#8cb8b3] ring-2 ring-[#8cb8b3]/40",
+        6: "text-[#8397c4] border-[#8397c4] ring-2 ring-[#8397c4]/40",
+        7: "text-[#9783ba] border-[#9783ba] ring-2 ring-[#9783ba]/40",
       };
       return `${styles[score] || ""} bg-transparent border-[1.5px]`;
     }
@@ -80,14 +121,14 @@ export default function QuizView({
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
             <div
-              className={`h-2 rounded-full transition-all duration-[550ms] ease-out ${isReviewMode ? 'bg-green-500' : 'bg-green-forest'}`}
+              className={`h-2 rounded-full transition-all duration-[550ms] ease-out ${isReviewMode ? 'bg-klein-blue' : 'bg-green-forest'}`}
               style={{
                 width: `${((currentQuestion + 1) / totalQuestions) * 100}%`,
               }}
             ></div>
           </div>
         </div>
-
+ 
         <div className="flex-grow flex flex-col justify-center min-h-[160px] relative">
           <AnimatePresence mode="popLayout" custom={direction}>
             <motion.div
@@ -107,7 +148,7 @@ export default function QuizView({
                 stiffness: 350,
                 damping: 25,
               }}
-              className={`${isReviewMode ? 'bg-white/80 border-green-200 shadow-lg shadow-green-100/20' : 'bg-green-50/60 border-green-100/50 shadow-sm'} backdrop-blur-md p-6 rounded-2xl border text-lg leading-relaxed text-center font-medium w-full text-balance transition-colors`}
+              className={`${isReviewMode ? 'bg-white/80 border-blue-200/60 shadow-lg shadow-blue-100/20' : 'bg-green-50/60 border-green-100/50 shadow-sm'} backdrop-blur-md p-6 rounded-2xl border text-lg leading-relaxed text-center font-medium w-full text-balance transition-colors`}
             >
               {questions[currentQuestion]}
             </motion.div>
@@ -137,26 +178,70 @@ export default function QuizView({
           })}
         </div>
 
-        <div className="flex justify-between items-center sm:mt-2 h-10 w-full">
-          <button
-            onClick={handlePrev}
-            className={`flex items-center gap-2 text-sm transition-colors py-2 px-4 rounded-lg flex-shrink-0 ${
-              currentQuestion === 0
-                ? "opacity-40 cursor-not-allowed text-gray-400"
-                : "text-gray-500 hover:text-green-dark hover:bg-white border border-transparent hover:border-gray-200"
-            }`}
-          >
-            <ArrowLeft size={16} />
-            上一题
-          </button>
+        <div className="w-full sm:mt-2 h-10">
+          {isReviewMode ? (
+            <div className="grid grid-cols-3 items-center w-full h-full">
+              {/* Left: Previous button */}
+              <div className="flex justify-start">
+                <button
+                  onClick={handlePrev}
+                  disabled={currentQuestion === 0}
+                  className={`flex items-center gap-1.5 text-sm transition-colors py-2 px-3 rounded-lg flex-shrink-0 ${
+                    currentQuestion === 0
+                      ? "opacity-30 cursor-not-allowed text-gray-400"
+                      : "text-gray-500 hover:text-klein-blue hover:bg-white border border-transparent hover:border-gray-200"
+                  }`}
+                >
+                  <ArrowLeft size={16} />
+                  <span>上一题</span>
+                </button>
+              </div>
 
-          {isReviewMode && onBackToOverview && (
-            <button
-              onClick={onBackToOverview}
-              className="px-4 py-2 bg-white/80 border border-gray-100 text-gray-500 font-bold text-sm rounded-xl shadow-sm hover:text-green-600 transition-all flex items-center gap-1.5"
-            >
-              返回概览
-            </button>
+              {/* Center: Confirm button */}
+              <div className="flex justify-center">
+                {onBackToOverview && (
+                  <button
+                    onClick={onBackToOverview}
+                    className="px-5 py-2 bg-klein-blue hover:bg-klein-blue-light text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-100/30 transition-all flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    <span>确认</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Right: Next button */}
+              <div className="flex justify-end">
+                {handleNext && (
+                  <button
+                    onClick={handleNext}
+                    disabled={currentQuestion === totalQuestions - 1}
+                    className={`flex items-center gap-1.5 text-sm transition-colors py-2 px-3 rounded-lg flex-shrink-0 ${
+                      currentQuestion === totalQuestions - 1
+                        ? "opacity-30 cursor-not-allowed text-gray-400"
+                        : "text-gray-500 hover:text-klein-blue hover:bg-white border border-transparent hover:border-gray-200"
+                    }`}
+                  >
+                    <span>下一题</span>
+                    <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center w-full h-full">
+              <button
+                onClick={handlePrev}
+                disabled={currentQuestion === 0}
+                className={`flex items-center gap-1.5 text-sm transition-colors py-2 px-3 rounded-lg flex-shrink-0 ${
+                  currentQuestion === 0
+                    ? "opacity-40 cursor-not-allowed text-gray-400"
+                    : "text-gray-500 hover:text-green-dark hover:bg-white border border-transparent hover:border-gray-200"
+                }`}
+              >
+                <ArrowLeft size={16} />
+                上一题
+              </button>
+            </div>
           )}
         </div>
       </div>

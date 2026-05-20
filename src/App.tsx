@@ -361,14 +361,20 @@ export default function App() {
         if (view === 'home' && userName.trim()) {
            handleStart();
         } else if (view === 'overview') {
-           handleSubmit();
+           if (reviewResult) {
+             setReviewResult(null);
+             setUserScores([]);
+             setView("resultsList");
+           } else {
+             handleSubmit();
+           }
         }
       }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [view, currentQuestion, userName, userScores, isTransitioning, handleSubmit]);
+  }, [view, currentQuestion, userName, userScores, isTransitioning, handleSubmit, reviewResult]);
 
   useEffect(() => {
     document.title = `IYKYK | 来自 ${quizData.hostName} 的 Quiz`;
@@ -395,7 +401,7 @@ export default function App() {
 
   const handleScore = useCallback(
     (score: number) => {
-      if (isTransitioning) return;
+      if (isTransitioning || reviewResult) return;
       setIsTransitioning(true);
       setDirection(1);
 
@@ -439,7 +445,7 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (view !== "quiz" || isTransitioning) return;
+      if (view !== "quiz" || isTransitioning || reviewResult) return;
 
       const keyMap: Record<string, number> = {
         Digit1: 1, Numpad1: 1, "1": 1,
@@ -459,7 +465,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [view, isTransitioning, handleScore]);
+  }, [view, isTransitioning, handleScore, reviewResult]);
 
   const handlePrev = () => {
     if (currentQuestion > 0 && !isTransitioning) {
@@ -554,12 +560,12 @@ export default function App() {
   };
 
   return (
-    <div className={`h-[100dvh] text-gray-dark font-sans flex flex-col items-center px-4 pt-6 pb-6 sm:px-8 sm:pt-12 sm:pb-12 overflow-hidden w-full relative transition-[padding] duration-500 ease-out ${isCreatingMode ? 'theme-blue selection:bg-klein-blue selection:text-white' : 'selection:bg-green-forest selection:text-white'}`}>
+    <div className={`h-[100dvh] text-gray-dark font-sans flex flex-col items-center px-4 pt-6 pb-6 sm:px-8 sm:pt-12 sm:pb-12 overflow-hidden w-full relative transition-[padding] duration-500 ease-out ${(isCreatingMode || !!reviewResult || view === 'resultsList') ? 'theme-blue selection:bg-klein-blue selection:text-white' : 'selection:bg-green-forest selection:text-white'}`}>
       {/* Background elements */}
       <div 
         className="absolute inset-0 z-0 bg-[length:300%_300%] animate-bg-pan bg-gradient-to-br from-[#d4e0c1] via-[#f7f9f4] to-[#b5cca1]"
       />
-      <WaveBackground active={isCreatingMode} />
+      <WaveBackground active={isCreatingMode || !!reviewResult || view === 'resultsList'} />
       
       {isAIStudio && !isCreatingMode && (
         <button
@@ -601,14 +607,14 @@ export default function App() {
                 initial={{ x: "150vw", opacity: 0 }}
                 animate={{ x: 0, opacity: 1, transition: { delay: 0.75, duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
                 exit={{ x: "150vw", opacity: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
-                className="w-full h-full flex flex-col min-h-0 relative"
+                className={`w-full flex flex-col min-h-0 relative ${view === 'resultsList' ? 'h-auto max-h-[80vh]' : 'h-full'}`}
               >
                 <motion.div 
-                  layout 
-                  initial={false} 
-                  animate={{ height: view === 'home' ? '2.5rem' : '0rem' }} 
-                  transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }} 
-                  className="w-full shrink-0" 
+                   layout 
+                   initial={false} 
+                   animate={{ height: view === 'home' ? '2.5rem' : '0rem' }} 
+                   transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }} 
+                   className="w-full shrink-0" 
                 />
                 <AnimatePresence>
                   {view === "home" && (
@@ -616,7 +622,7 @@ export default function App() {
                   )}
                 </AnimatePresence>
 
-                <div className="w-full h-full bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl overflow-hidden flex flex-col relative z-10 min-h-0">
+                <div className={`w-full bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl overflow-hidden flex flex-col relative z-10 min-h-0 ${view === 'resultsList' ? 'h-auto max-h-[80vh]' : 'h-full'}`}>
                   {isLoadingQuiz ? (
                     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                       <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mb-4" />
@@ -670,6 +676,12 @@ export default function App() {
                       isTransitioning={isTransitioning}
                       handleScore={handleScore}
                       handlePrev={handlePrev}
+                      handleNext={() => {
+                        if (currentQuestion < totalQuestions - 1 && !isTransitioning) {
+                          setDirection(1);
+                          setCurrentQuestion((p) => p + 1);
+                        }
+                      }}
                       isReviewMode={!!reviewResult}
                       correctScores={quizData.hostScores}
                       onBackToOverview={() => setView("overview")}
