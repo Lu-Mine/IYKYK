@@ -241,17 +241,20 @@ export default function App() {
     
     // Attempt backend submission
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      let quizId = urlParams.get('id');
-      
-      if (!quizId) {
-        const path = window.location.pathname;
-        if (path.includes('/customquiz/')) {
-          quizId = path.split('/customquiz/')[1];
+      let quizId = quizData.userId || 'default_quiz';
+      if (!quizData.userId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        let qId = urlParams.get('id');
+        
+        if (!qId) {
+          const path = window.location.pathname;
+          const match = path.match(/\/customquiz\/([^/?#]+)/);
+          if (match && match[1]) {
+            qId = decodeURIComponent(match[1]);
+          }
         }
+        quizId = qId || 'default_quiz';
       }
-      
-      quizId = quizId || 'default_quiz';
       
       console.log('Submitting response:', {
         quizId,
@@ -469,19 +472,19 @@ export default function App() {
     setIsLoadingResults(true);
     setResultsError(null);
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      let quizId = urlParams.get('id');
-      
-      if (!quizId) {
+      let quizId = quizData.userId || 'default_quiz';
+      if (!quizData.userId) {
         const path = window.location.pathname;
-        if (path.includes('/customquiz/')) {
-          quizId = path.split('/customquiz/')[1];
+        const match = path.match(/\/customquiz\/([^/?#]+)/);
+        const urlParams = new URLSearchParams(window.location.search);
+        let qId = urlParams.get('id');
+        if (match && match[1]) {
+          qId = decodeURIComponent(match[1]);
         }
+        quizId = qId || 'default_quiz';
       }
-      quizId = quizId || 'default_quiz';
-
       const data = await fetchResults(quizId, secret);
-      setResults(data.results || []);
+      setResults(Array.isArray(data) ? data : (data.results || []));
       setView("resultsList");
     } catch (err: any) {
       console.error('Fetch results failed:', err);
@@ -741,6 +744,7 @@ export default function App() {
                       restartQuiz={restartQuiz}
                       isInitialSnakeDone={isInitialSnakeDone}
                       setIsInitialSnakeDone={setIsInitialSnakeDone}
+                      onOpenAdminDialog={() => setShowSecretModal(true)}
                     />
                   )}
                 </AnimatePresence>

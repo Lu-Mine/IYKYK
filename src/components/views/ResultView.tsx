@@ -43,6 +43,7 @@ interface ResultViewProps {
   restartQuiz: () => void;
   isInitialSnakeDone: boolean;
   setIsInitialSnakeDone: (val: boolean) => void;
+  onOpenAdminDialog: () => void;
 }
 
 export default function ResultView({
@@ -54,7 +55,8 @@ export default function ResultView({
   resetToHome,
   restartQuiz,
   isInitialSnakeDone,
-  setIsInitialSnakeDone
+  setIsInitialSnakeDone,
+  onOpenAdminDialog
 }: ResultViewProps) {
   const [showMatches, setShowMatches] = useState(false);
 
@@ -320,6 +322,28 @@ export default function ResultView({
           </div>
         </motion.div>
 
+        {/* Creator / Admin Section mapped to global dialog */}
+        <motion.div
+           variants={resultItemVariants}
+           className="w-full mt-4 pb-10 flex flex-col items-center"
+        >
+          <div className="select-none flex items-center gap-2 px-1 w-full mb-4">
+            <div className="h-px flex-grow bg-gray-200"></div>
+            <span className="text-[12px] uppercase tracking-widest text-gray-400 font-bold whitespace-nowrap">
+              出题人权限 · AUTHOR ONLY
+            </span>
+            <div className="h-px flex-grow bg-gray-200"></div>
+          </div>
+          <button
+            onClick={onOpenAdminDialog}
+            className="w-full py-4 bg-gray-50/80 backdrop-blur-sm border border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-500 hover:bg-gray-100 hover:border-gray-400 hover:text-gray-700 transition-all shadow-sm group"
+          >
+            <div className="w-8 h-8 rounded-full bg-gray-200/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <span className="text-gray-500 font-bold text-lg">?</span>
+            </div>
+            <span className="text-sm font-bold tracking-wider">查看朋友的答题结果</span>
+          </button>
+        </motion.div>
       </div>
       </ScrollArea>
 

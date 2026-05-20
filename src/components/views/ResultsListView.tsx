@@ -62,10 +62,11 @@ export default function ResultsListView({ results, onBack, onReview, hostScores 
             </div>
           ) : (
             sortedResults.map((record, idx) => {
-              const score = calculateResultScore(record.participantScores, hostScores, record.participantScores.length);
+              const pScores = record.participantScores || [];
+              const score = calculateResultScore(pScores, hostScores, pScores.length || hostScores.length);
               return (
                 <div
-                  key={record.id}
+                  key={record.id || idx}
                   onClick={() => onReview(record)}
                   className="relative bg-white/50 backdrop-blur-sm border border-white/50 hover:border-green-300 hover:bg-white/80 p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-colors shadow-sm group z-auto active:scale-[0.99]"
                 >
