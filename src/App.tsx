@@ -469,11 +469,17 @@ export default function App() {
     setIsLoadingResults(true);
     setResultsError(null);
     try {
-      const path = window.location.pathname;
-      let quizId = 'default_quiz';
-      if (path.includes('/customquiz/')) {
-        quizId = path.split('/customquiz/')[1];
+      const urlParams = new URLSearchParams(window.location.search);
+      let quizId = urlParams.get('id');
+      
+      if (!quizId) {
+        const path = window.location.pathname;
+        if (path.includes('/customquiz/')) {
+          quizId = path.split('/customquiz/')[1];
+        }
       }
+      quizId = quizId || 'default_quiz';
+
       const data = await fetchResults(quizId, secret);
       setResults(data.results || []);
       setView("resultsList");
