@@ -12,6 +12,7 @@ import ResultView from "./components/views/ResultView";
 import CreateQuiz from "./components/CreateQuiz";
 import ResultsListView from "./components/views/ResultsListView";
 import ConfirmModal from "./components/ui/ConfirmModal";
+import { Analytics } from "@vercel/analytics/react";
 
 type ViewState = "home" | "quiz" | "overview" | "result" | "resultsList";
 
@@ -1178,6 +1179,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      <Analytics />
     </div>
   );
 }
