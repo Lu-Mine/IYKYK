@@ -5,7 +5,8 @@ import { calculateResultScore, getPercentageTheme } from "../../lib/quizUtils";
 import { HOST_SCORES } from "../../lib/constants";
 
 interface ResultRecord {
-  id: string;
+  id?: string;
+  responseId?: string;
   participantName: string;
   participantScores: number[];
   createdAt: string;
@@ -53,7 +54,7 @@ export default function ResultsListView({ results, onBack, onReview, hostScores 
         </p>
       </div>
 
-      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="px-6 relative min-h-full">
+      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="px-6 pb-6 relative">
         <div className="space-y-4 mt-2">
           {sortedResults.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -65,9 +66,10 @@ export default function ResultsListView({ results, onBack, onReview, hostScores 
               const pScores = record.participantScores || [];
               const score = calculateResultScore(pScores, hostScores, pScores.length || hostScores.length);
               const theme = getPercentageTheme(score);
+              const recordKey = record.responseId || record.id || `record-${idx}`;
               return (
                 <div
-                  key={record.id || idx}
+                  key={recordKey}
                   onClick={() => onReview(record)}
                   className="relative bg-white/50 backdrop-blur-sm border border-white/50 hover:border-klein-blue/30 hover:bg-white/80 p-4 rounded-2xl flex items-center justify-between cursor-pointer transition-colors shadow-sm group z-auto active:scale-[0.99]"
                 >

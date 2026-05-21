@@ -3,23 +3,43 @@ export const calculateResultScore = (
   hostScores: number[],
   totalQuestions: number
 ): number => {
-  const scoreConfig = [100, 90, 60, 40, 30, 10, 0];
+  if (!totalQuestions || totalQuestions <= 0) return 0;
+
+  // Rating scale is 1-7, meaning maximum absolute difference is 6.
+  // We use a stricter scoring distribution where large gaps are penalized more:
+  // diff = 0: 100 (Perfect Match)
+  // diff = 1: 85  (Close Match)
+  // diff = 2: 60  (Minor Gap)
+  // diff = 3: 30  (Moderate Divergence)
+  // diff = 4: 10  (Significant Divergence)
+  // diff = 5: 0   (Large Divergence)
+  // diff = 6: 0   (Polar Opposites)
+  const scoreConfig = [100, 85, 60, 30, 10, 0, 0];
   let totalScore = 0;
-  let allMatches = true;
-  for (let i = 0; i < totalQuestions; i++) {
-    const diff = Math.abs((hostScores[i] || 4) - (userScores[i] || 4));
+  let allMatchesWithinOne = true;
+  const count = Math.min(totalQuestions, userScores.length, hostScores.length);
+
+  if (count <= 0) return 0;
+
+  for (let i = 0; i < count; i++) {
+    const userVal = userScores[i] !== undefined ? userScores[i] : 4;
+    const hostVal = hostScores[i] !== undefined ? hostScores[i] : 4;
+    const diff = Math.abs(hostVal - userVal);
+    
     if (diff > 1) {
-      allMatches = false;
+      allMatchesWithinOne = false;
     }
-    const errorIndex = Math.min(Math.max(diff, 0), 6);
+    
+    const errorIndex = Math.min(Math.max(Math.round(diff), 0), 6);
     totalScore += scoreConfig[errorIndex];
   }
   
-  if (allMatches && userScores.length === totalQuestions) {
+  // If all question differences are within 1 point, output 100 (perfect match score)
+  if (allMatchesWithinOne) {
     return 100;
   }
   
-  return Math.round(totalScore / totalQuestions);
+  return Math.round(totalScore / count);
 }
 
 export const getPercentageTheme = (p: number) => {
@@ -116,38 +136,38 @@ export const getScoreStyles = (s: number, isSelected: boolean) => {
   if (isSelected) {
     switch (s) {
       case 1:
-        return "bg-gradient-to-br from-red-600 to-red-400 text-white border border-transparent";
+        return "bg-red-500 text-white border border-transparent";
       case 2:
-        return "bg-gradient-to-br from-orange-600 to-orange-400 text-white border border-transparent";
+        return "bg-orange-500 text-white border border-transparent";
       case 3:
-        return "bg-gradient-to-br from-amber-600 to-amber-400 text-white border border-transparent";
+        return "bg-amber-500 text-white border border-transparent";
       case 4:
-        return "bg-gradient-to-br from-yellow-600 to-yellow-400 text-white border border-transparent";
+        return "bg-yellow-500 text-white border border-transparent";
       case 5:
-        return "bg-gradient-to-br from-lime-600 to-lime-400 text-white border border-transparent";
+        return "bg-lime-500 text-white border border-transparent";
       case 6:
-        return "bg-gradient-to-br from-emerald-600 to-emerald-400 text-white border border-transparent";
+        return "bg-emerald-500 text-white border border-transparent";
       case 7:
-        return "bg-gradient-to-br from-green-600 to-green-400 text-white border border-transparent";
+        return "bg-green-500 text-white border border-transparent";
       default:
         return "bg-green-forest text-white border border-transparent";
     }
   } else {
     switch (s) {
       case 1:
-        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-red-100 hover:to-red-50 hover:text-red-600 hover:border-transparent";
+        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-red-100 hover:text-red-600 hover:border-transparent";
       case 2:
-        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-orange-100 hover:to-orange-50 hover:text-orange-600 hover:border-transparent";
+        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-orange-100 hover:text-orange-600 hover:border-transparent";
       case 3:
-        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-amber-100 hover:to-amber-50 hover:text-amber-600 hover:border-transparent";
+        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-amber-100 hover:text-amber-600 hover:border-transparent";
       case 4:
-        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-yellow-100 hover:to-yellow-50 hover:text-yellow-600 hover:border-transparent";
+        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-yellow-100 hover:text-yellow-600 hover:border-transparent";
       case 5:
-        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-lime-100 hover:to-lime-50 hover:text-lime-600 hover:border-transparent";
+        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-lime-100 hover:text-lime-600 hover:border-transparent";
       case 6:
-        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-emerald-50 hover:text-emerald-600 hover:border-transparent";
+        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-emerald-100 hover:text-emerald-600 hover:border-transparent";
       case 7:
-        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-gradient-to-br hover:from-green-100 hover:to-green-50 hover:text-green-600 hover:border-transparent";
+        return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-green-100 hover:text-green-600 hover:border-transparent";
       default:
         return "bg-gray-50 text-gray-500 border border-gray-100 hover:bg-green-50 hover:text-green-600 hover:border-transparent";
     }

@@ -16,10 +16,12 @@
 
   --animate-rainbow: rainbow 4s ease infinite;
   --animate-bg-pan: bg-pan 15s ease infinite;
+  --animate-bg-pan-gpu: bg-pan-gpu 24s ease-in-out infinite alternate;
 
-  --animate-wave-breathe-1: wave-breathe-1 5s ease-in-out infinite;
-  --animate-wave-breathe-2: wave-breathe-2 4.5s ease-in-out infinite;
-  --animate-wave-breathe-3: wave-breathe-3 6s ease-in-out infinite;
+  --animate-wave-breathe-1: wave-breathe-1 8s ease-in-out infinite alternate;
+  --animate-wave-breathe-2: wave-breathe-2 9s ease-in-out infinite alternate;
+  --animate-wave-breathe-3: wave-breathe-3 11s ease-in-out infinite alternate;
+  --animate-wave-breathe-4: wave-breathe-4 13s ease-in-out infinite alternate;
 
   @keyframes rainbow {
     0%, 100% { background-position: 0% 50%; }
@@ -31,23 +33,30 @@
     50% { background-position: 100% 50%; }
   }
 
+  @keyframes bg-pan-gpu {
+    0% { transform: translate3d(-3%, -2%, 0) scale(1.05) rotate(0deg); }
+    50% { transform: translate3d(3%, 2%, 0) scale(1.1) rotate(0.8deg); }
+    100% { transform: translate3d(-3%, -2%, 0) scale(1.05) rotate(0deg); }
+  }
+
   @keyframes wave-breathe-1 {
-    0%, 100% { transform: translateZ(0) scaleX(1); }
-    25% { transform: translateZ(0) scaleX(1.4); }
-    50% { transform: translateZ(0) scaleX(0.8); }
-    75% { transform: translateZ(0) scaleX(1.15); }
+    0% { transform: translate3d(0, 0, 0) scaleX(1) rotate(0deg); }
+    100% { transform: translate3d(3%, -1%, 0) scaleX(1.15) rotate(0.5deg); }
   }
 
   @keyframes wave-breathe-2 {
-    0%, 100% { transform: translateZ(0) scaleX(1); }
-    33% { transform: translateZ(0) scaleX(0.7); }
-    66% { transform: translateZ(0) scaleX(1.3); }
+    0% { transform: translate3d(0, 0, 0) scaleX(1) rotate(0deg); }
+    100% { transform: translate3d(-2%, 2%, 0) scaleX(0.88) rotate(-0.7deg); }
   }
 
   @keyframes wave-breathe-3 {
-    0%, 100% { transform: translateZ(0) scaleX(1); }
-    30% { transform: translateZ(0) scaleX(1.4); }
-    70% { transform: translateZ(0) scaleX(0.85); }
+    0% { transform: translate3d(0, 0, 0) scaleX(1) rotate(0deg); }
+    100% { transform: translate3d(1.5%, -1.5%, 0) scaleX(1.12) rotate(0.4deg); }
+  }
+
+  @keyframes wave-breathe-4 {
+    0% { transform: translate3d(0, 0, 0) scaleX(1) rotate(0deg); }
+    100% { transform: translate3d(-1%, 1%, 0) scaleX(0.92) rotate(-0.3deg); }
   }
 }
 
@@ -77,34 +86,48 @@ button {
 
 @layer base {
   /* ============================================================== */
-  /* 全局 GPU 硬件加速 & 渲染优化                                      */
+  /* 全局智能 GPU 硬件加速 & 渲染优化                                 */
   /* ============================================================== */
   *, *::before, *::after {
-    /* 开启最高级别的字体抗锯齿，使动画过渡中字体边缘更平滑 */
+    /* 开启高精度字体抗锯齿，使动画过渡中字体边缘完美平滑且不发虚 */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* 针对有动态内联样式(如 framer-motion)注入的元素，强制触发重绘和 GPU 运算 */
-  [style*="transform"], [style*="opacity"] {
+  /* 
+    对真正执行动画、过渡或使用 Framer Motion 的元素启用高性能 GPU 加速。
+    这能全局强制触发核心动画的 GPU 硬件渲染，同时避免由于滥用 translateZ 
+    给所有 div 导致 GPU 显存溢出（Layer Explosion 导致的严重卡顿）。
+  */
+  [data-framer-component-type],
+  .motion-div,
+  .will-change-transform,
+  .will-change-opacity,
+  .animate-wave-breathe-1,
+  .animate-wave-breathe-2,
+  .animate-wave-breathe-3,
+  .animate-wave-breathe-4,
+  .animate-bg-pan-gpu {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
+    perspective: 1000px;
     transform: translateZ(0);
     will-change: transform, opacity;
   }
-  
-  /* 对普通的块级元素和媒体开启隐式 GPU 层缓冲 */
-  div, section, main, article, img, video {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transform: translateZ(0); 
+
+  /* 进一步优化高频动画元素的重绘与混合渲染 */
+  svg, img, video {
+    /* 强硬启用硬件合成层，确保矢量图与多媒体在进行 2D 位移、缩放时流畅不卡顿 */
+    transform: translate3d(0, 0, 0);
   }
 
   /* ！！！重要：规避 fixed 元素的 GPU 加速，否则会破坏全局绝对/固定定位 ！！！*/
   .fixed, [class*="fixed"], [style*="position: fixed"] {
+    -webkit-backface-visibility: visible !important;
+    backface-visibility: visible !important;
+    perspective: none !important;
     transform: none !important;
     will-change: auto !important;
-    backface-visibility: visible !important;
   }
   /* ============================================================== */
 
@@ -142,7 +165,7 @@ button {
     scrollbar-width: none; /* Firefox */
   }
   
-  .custom-scrollbar {
+  .custom-scrollbar:not([data-overlayscrollbars]):not([data-overlayscrollbars-initialize]) {
     /* Use overlay to make scrollbars float and not take up layout space */
     overflow: overlay !important;
   }
@@ -166,10 +189,22 @@ button {
   }
 
   /* Force overlay behavior on all explicit scroll containers for browsers that support it */
-  .overflow-auto { overflow: overlay !important; }
-  .overflow-x-auto { overflow-x: overlay !important; }
-  .overflow-y-auto { overflow-y: overlay !important; }
-  .overflow-scroll { overflow: overlay !important; }
-  .overflow-x-scroll { overflow-x: overlay !important; }
-  .overflow-y-scroll { overflow-y: overlay !important; }
+  .overflow-auto:not([data-overlayscrollbars]):not([data-overlayscrollbars-initialize]) { overflow: overlay !important; }
+  .overflow-x-auto:not([data-overlayscrollbars]):not([data-overlayscrollbars-initialize]) { overflow-x: overlay !important; }
+  .overflow-y-auto:not([data-overlayscrollbars]):not([data-overlayscrollbars-initialize]) { overflow-y: overlay !important; }
+  .overflow-scroll:not([data-overlayscrollbars]):not([data-overlayscrollbars-initialize]) { overflow: overlay !important; }
+  .overflow-x-scroll:not([data-overlayscrollbars]):not([data-overlayscrollbars-initialize]) { overflow-x: overlay !important; }
+  .overflow-y-scroll:not([data-overlayscrollbars]):not([data-overlayscrollbars-initialize]) { overflow-y: overlay !important; }
+
+  /* Optimize React custom scroll area containers for flex calculations */
+  div[data-react-scrollarea="true"] {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+  }
+  div[data-react-scrollarea="true"] > div[data-overlayscrollbars-viewport] {
+    flex: 1 1 0% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
 }

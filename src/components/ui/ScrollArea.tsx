@@ -63,6 +63,7 @@ export const ScrollArea = forwardRef<HTMLDivElement, ScrollAreaProps>(
         }}
         defer
         className={className}
+        data-react-scrollarea="true"
         {...props as any}
       >
         <div className={contentClassName}>

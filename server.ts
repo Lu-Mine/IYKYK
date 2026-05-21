@@ -12,15 +12,10 @@ async function startServer() {
   const PORT = 3000;
 
   console.log('=== [Diagnostic] Checking Environment Variables ===');
-  const kvUrl = process.env.KV_REST_API_URL;
-  const kvToken = process.env.KV_REST_API_TOKEN;
-  console.log('KV_REST_API_URL configured:', kvUrl ? `Yes (length: ${kvUrl.length})` : 'No');
-  console.log('KV_REST_API_TOKEN configured:', kvToken ? `Yes (length: ${kvToken.length})` : 'No');
-  if (kvUrl) {
-    console.log('KV_REST_API_URL prefix:', kvUrl.substring(0, 15) + '...');
-    if (kvUrl.startsWith('"') || kvUrl.startsWith("'")) {
-      console.warn('WARNING: KV_REST_API_URL starts with quotation marks! This might cause connection errors.');
-    }
+  const mongoUri = process.env.MONGODB_URI;
+  console.log('MONGODB_URI configured:', mongoUri ? `Yes (length: ${mongoUri.length})` : 'No');
+  if (mongoUri) {
+    console.log('MONGODB_URI prefix:', mongoUri.substring(0, Math.min(25, mongoUri.length)) + '...');
   }
   console.log('==================================================');
 

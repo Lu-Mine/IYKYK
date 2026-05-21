@@ -16,6 +16,7 @@ export interface QuizSubmissionPayload {
   participantScores: number[];
   deviceInfo: string;
   createdAt: string;
+  browserId?: string;
 }
 
 /**
@@ -65,8 +66,15 @@ export async function submitQuizResponse(payload: QuizSubmissionPayload): Promis
 /**
  * 从 Vercel Serverless API 获取试卷内容
  */
-export async function fetchQuiz(quizId: string) {
-  const response = await fetch(`/api/get-quiz?quizId=${encodeURIComponent(quizId)}`);
+export async function fetchQuiz(quizId: string, browserId?: string, participantName?: string) {
+  let url = `/api/get-quiz?quizId=${encodeURIComponent(quizId)}`;
+  if (browserId) {
+    url += `&browserId=${encodeURIComponent(browserId)}`;
+  }
+  if (participantName) {
+    url += `&participantName=${encodeURIComponent(participantName)}`;
+  }
+  const response = await fetch(url);
 
   if (!response.ok) {
     if (response.status === 404) {

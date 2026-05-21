@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { Edit2, ArrowLeft, Home, Rocket, Zap } from "lucide-react";
 import { ScrollArea } from "../ui/ScrollArea";
+import ConfirmModal from "../ui/ConfirmModal";
 
 interface Props {
   hostName: string;
@@ -54,26 +55,6 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
     }
   }, [description, isEditingDesc]);
 
-  // Global keyboard shortcuts
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") {
-         return; 
-      }
-      if (showExitConfirm) {
-        if (e.key === "Enter") {
-          setShowExitConfirm(false);
-          setTimeout(() => {
-             onExit();
-          }, 200);
-        }
-        if (e.key === "Escape") setShowExitConfirm(false);
-        return;
-      }
-    };
-    window.addEventListener("keydown", handleGlobalKeyDown);
-    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [onStart, onExit, hasEditedQuestions, showExitConfirm, secret]);
 
   return (
     <motion.div
@@ -209,8 +190,10 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
             <blockquote className="border-l-[3px] border-klein-blue/40 bg-klein-blue/5 rounded-r-md px-3 py-2 text-sm text-gray-800 text-justify tracking-tight">
               <b>出题须知：</b>
               <div className="my-2 text-sm font-normal text-gray-500">
-                1. 至少添加一道题并自评。<br/>
-                2. 设置一个密语，用于后续你在后台查看朋友们的答题结果。
+                1. 点击页面上的铅笔可以修改对应文字。<br/>
+                2. 至少添加一道题并自评。<br/>
+                3. 设置一个密语，用于后续你在后台查看朋友们的答题结果。<br/><span className="text-red-600 font-extrabold">这个密语只会在成功上传试卷时显示一次！！</span><br/>
+                4. 在试卷预览页面可以修改设置。
               </div>
             </blockquote>
           </motion.div>
@@ -223,7 +206,7 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
       >
         <input
           type="text"
-          placeholder="设置一个密语 (必填)"
+          placeholder="设置密语 (至少8字符; 不可只有数字/大写/小写字母)"
           maxLength={20}
           className="select-text w-full px-4 py-3 rounded-xl border border-white/50 focus:outline-none focus:ring-2 focus:ring-klein-blue focus:border-transparent transition-all text-center bg-white/60 shadow-sm backdrop-blur-sm"
           value={secret}
@@ -264,51 +247,20 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
                </div>
             </motion.div>
           )}
-          {showExitConfirm && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setShowExitConfirm(false)}
-              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm pointer-events-auto"
-            >
-              <motion.div 
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                transition={{ duration: 0.2, type: "spring", bounce: 0.3 }}
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center"
-              >
-                <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
-                  <Home size={24} />
-                </div>
-                <h3 className="text-xl font-extrabold text-gray-800 mb-2">确定要回主页吗？</h3>
-                <p className="text-gray-500 text-center text-sm mb-6">不保留试卷内容，确定要回主页吗？</p>
-                
-                <div className="flex gap-3 w-full">
-                  <button
-                    onClick={() => setShowExitConfirm(false)}
-                    className="flex-1 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-bold transition-colors"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={() => {
-                       setShowExitConfirm(false);
-                       setTimeout(() => {
-                           onExit();
-                       }, 200);
-                    }}
-                    className="flex-1 py-2.5 rounded-xl text-white bg-red-500 hover:bg-red-600 font-bold shadow-md shadow-red-500/20 transition-all cursor-pointer"
-                  >
-                    确定
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
+          <ConfirmModal
+            isOpen={showExitConfirm}
+            onClose={() => setShowExitConfirm(false)}
+            onConfirm={() => {
+              setShowExitConfirm(false);
+              setTimeout(() => {
+                onExit();
+              }, 200);
+            }}
+            title="确定要回主页吗？"
+            description="不保留试卷内容，确定要回主页吗？"
+            theme="red"
+            icon={<Home size={24} />}
+          />
         </AnimatePresence>,
         document.body
       )}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Github, Edit2, Rocket, Users, ChevronRight, X, Loader2 } from "lucide-react";
+import { Github, Edit2, Rocket, Users, ChevronRight, X, Loader2, AlertTriangle } from "lucide-react";
 import { ScrollArea } from "../ui/ScrollArea";
 import ReactMarkdown from "react-markdown";
 
@@ -14,6 +14,8 @@ interface HomeViewProps {
   handleStart: () => void;
   onViewResults?: (secret: string) => Promise<void>;
   isLoadingResults?: boolean;
+  quizData?: any;
+  alreadySubmitted?: boolean;
 }
 
 export function HomeGreenWindow({ commitHash, delay = 0.4, userId }: { commitHash: string, delay?: number, userId?: string }) {
@@ -60,7 +62,9 @@ export default function HomeView({
   handleStart, 
   onEnterCreateMode,
   onViewResults,
-  isLoadingResults
+  isLoadingResults,
+  quizData,
+  alreadySubmitted
 }: HomeViewProps & { onEnterCreateMode?: () => void }) {
   const isCustomQuiz = typeof window !== "undefined" && (() => {
     const path = window.location.pathname;
@@ -149,7 +153,7 @@ export default function HomeView({
             className="leading-relaxed space-y-6"
           >
             {description ? (
-              <div className="text-sm text-gray-600 text-justify tracking-tight description-content">
+              <div className={description === "用户没有填写问卷描述...没关系，来玩吧！" ? "text-sm text-gray-600 text-center tracking-tight description-content" : "text-sm text-gray-600 text-justify tracking-tight description-content"}>
                 <ReactMarkdown>{description}</ReactMarkdown>
               </div>
             ) : (
@@ -162,6 +166,20 @@ export default function HomeView({
                 <a href="https://www.16personalities.com/" target="_blank" rel="noopener noreferrer" className="link-underline text-gray-700">MBTI</a>
                 或是星座什么的来引发共鸣，而是回归到人与人间最具体的细节里面找共识。
               </p>
+            )}
+
+            {quizData?.settings?.allowRepeat === false && (
+              <div className="border border-red-200 bg-red-50 rounded-2xl p-4 flex gap-3 text-red-700 text-sm leading-relaxed mt-2 mb-6 shadow-sm font-sans">
+                <div className="shrink-0 flex items-start pt-0.5 justify-center text-red-500">
+                  <AlertTriangle className="w-5 h-5 shrink-0" />
+                </div>
+                <div className="text-left">
+                  <span className="font-extrabold block text-red-800 mb-0.5">该问卷已设置“只能答一次”：</span>
+                  来自同一用户的回答只能提交一次。{alreadySubmitted ? (
+                    <span className="font-extrabold text-red-900 block mt-1 underline">已完成过本测试。不可重复答卷！</span>
+                  ) : "请仔细思考并认真回答试题。"}
+                </div>
+              </div>
             )}
 
             <blockquote className="mb-6 border-l-[3px] border-green-forest/40 bg-green-forest/5 rounded-r-md px-3 py-2 my-2 text-sm text-gray-800 text-justify tracking-tight">
@@ -202,16 +220,17 @@ export default function HomeView({
       >
         <input
           type="text"
-          placeholder="请输入你的昵称"
+          placeholder={quizData?.settings?.allowRepeat === false && alreadySubmitted ? "已提交，不能重复作答" : "请输入你的昵称"}
           maxLength={10}
-          className="select-text w-full px-4 py-3 rounded-xl border border-white/50 focus:outline-none focus:ring-2 focus:ring-green-forest focus:border-transparent transition-all text-center bg-white/60 shadow-sm backdrop-blur-sm"
+          className="select-text w-full px-4 py-3 rounded-xl border border-white/50 focus:outline-none focus:ring-2 focus:ring-green-forest focus:border-transparent transition-all text-center bg-white/60 shadow-sm backdrop-blur-sm disabled:opacity-60 disabled:cursor-not-allowed"
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleStart()}
+          onKeyDown={(e) => e.key === "Enter" && !(quizData?.settings?.allowRepeat === false && alreadySubmitted) && handleStart()}
+          disabled={quizData?.settings?.allowRepeat === false && alreadySubmitted}
         />
         <button
           onClick={() => handleStart()}
-          disabled={!userName.trim()}
+          disabled={!userName.trim() || (quizData?.settings?.allowRepeat === false && alreadySubmitted)}
           className="w-full bg-green-forest hover:bg-green-dark text-white font-bold text-lg py-3 rounded-xl transition-all shadow-md shadow-green-200/50 disabled:shadow-none disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           <Rocket size={20} /> 开始挑战

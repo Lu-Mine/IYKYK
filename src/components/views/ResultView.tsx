@@ -44,6 +44,7 @@ interface ResultViewProps {
   isInitialSnakeDone: boolean;
   setIsInitialSnakeDone: (val: boolean) => void;
   onOpenAdminDialog: () => void;
+  alreadySubmitted?: boolean;
 }
 
 export default function ResultView({
@@ -56,7 +57,8 @@ export default function ResultView({
   restartQuiz,
   isInitialSnakeDone,
   setIsInitialSnakeDone,
-  onOpenAdminDialog
+  onOpenAdminDialog,
+  alreadySubmitted
 }: ResultViewProps) {
   const [showMatches, setShowMatches] = useState(false);
 
@@ -91,9 +93,9 @@ export default function ResultView({
       exit="exit"
       className="flex flex-col flex-1 w-full min-h-0 overflow-hidden"
     >
-      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="relative min-h-full">
+      <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="relative min-h-full flex flex-col">
       <div
-        className={`p-8 flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br transition-colors duration-500 rounded-t-3xl ${getPercentageTheme(calculateResult()).bgOverlay}`}
+        className={`p-8 flex-grow flex flex-col items-center justify-start min-h-full relative overflow-hidden bg-gradient-to-br transition-colors duration-500 rounded-t-3xl ${getPercentageTheme(calculateResult()).bgOverlay}`}
       >
         {/* Decorative background elements for report */}
         <div className="absolute top-[-50px] right-[-50px] w-32 h-32 bg-green-50 rounded-full blur-2xl opacity-60 pointer-events-none"></div>
@@ -213,114 +215,116 @@ export default function ResultView({
           </p>
         </motion.div>
 
-        <motion.div
-          variants={resultItemVariants}
-          className="w-full space-y-6 text-left"
-        >
-          <div className="select-none flex items-center gap-2 px-1">
-            <div className="h-px flex-grow bg-gray-200"></div>
-            <span className="text-[12px] uppercase tracking-widest text-gray-400 font-bold whitespace-nowrap">
-              深度解析 · Deep Insight
-            </span>
-            <div className="h-px flex-grow bg-gray-200"></div>
-          </div>
-
-          <div 
-            className="space-y-6 pb-4 relative"
+        {quizData?.settings?.showAnalysis !== false && (
+          <motion.div
+            variants={resultItemVariants}
+            className="w-full space-y-6 text-left"
           >
-            {analysis.gaps.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-[12px] font-bold text-orange-700 bg-orange-100/50 w-max px-2 py-0.5 rounded-full tracking-wider">
-                  认知温差 · GAPS ({analysis.gaps.length})
-                </h4>
-                <p className="select-none text-[13px] text-orange-800 font-medium opacity-90 px-1 border-l-2 border-orange-300 ml-1 pl-2">
-                  在这些细节上，你们的认知出现了明显的“分岔”。
-                </p>
-                <div className="space-y-2">
-                  {analysis.gaps.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white/60 backdrop-blur-sm p-3 pb-6 rounded-xl border border-white/50 text-[13px] leading-snug shadow-sm relative"
-                    >
-                      <span className="text-gray-500 block">
-                        “{item.question}”
-                      </span>
-                      <div className="select-none absolute bottom-1.5 right-2 flex gap-1">
-                        <span className="text-[12px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
-                          {item.diff >= 4 ? '差距大' : '差距小'}
-                        </span>
-                        <span className="text-[12px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
-                          你打 {item.userScore} 分
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="select-none flex items-center gap-2 px-1">
+              <div className="h-px flex-grow bg-gray-200"></div>
+              <span className="text-[12px] uppercase tracking-widest text-gray-400 font-bold whitespace-nowrap">
+                深度解析 · Deep Insight
+              </span>
+              <div className="h-px flex-grow bg-gray-200"></div>
+            </div>
 
-            {analysis.matches.length > 0 && (
-              <div className="space-y-3 relative">
-                <button
-                  onClick={() => setShowMatches(!showMatches)}
-                  className="flex items-center justify-between w-full text-left focus:outline-none group z-10 relative"
-                >
-                  <h4 className="text-[12px] font-bold text-green-700 bg-green-100/50 w-max px-2 py-0.5 rounded-full tracking-wider">
-                    高频共鸣 · MATCHES ({analysis.matches.length})
+            <div 
+              className="space-y-6 pb-4 relative"
+            >
+              {analysis.gaps.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-[12px] font-bold text-orange-700 bg-orange-100/50 w-max px-2 py-0.5 rounded-full tracking-wider">
+                    认知温差 · GAPS ({analysis.gaps.length})
                   </h4>
-                  <div className="text-gray-400 group-hover:text-green-600 transition-colors">
-                    <motion.div
-                      animate={{ rotate: showMatches ? 180 : 0 }}
-                    >
-                      <ChevronDown size={14} />
-                    </motion.div>
-                  </div>
-                </button>
-
-                <AnimatePresence>
-                  {showMatches && (
-                    <motion.div
-                      layout
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                      className="matches-container overflow-hidden"
-                    >
-                      <div className="space-y-3 pt-1 pb-1">
-                        <p className="select-none text-[13px] text-green-800 font-medium opacity-90 px-1 border-l-2 border-green-300 ml-1 pl-2">
-                          在这里，你们共享着同一种直觉与默契。
-                        </p>
-                        <div className="space-y-2">
-                          {analysis.matches.map((item, idx) => (
-                            <motion.div
-                              key={idx}
-                              initial={{ opacity: 0, y: -15 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ 
-                                duration: 0.4, 
-                                delay: 0.15 + idx * 0.1,
-                                ease: "easeOut"
-                              }}
-                              className="bg-white/60 backdrop-blur-sm p-3 pb-6 rounded-xl border border-white/50 text-[13px] leading-snug shadow-sm relative"
-                            >
-                              <span className="text-gray-500 block">
-                                “{item.question}”
-                              </span>
-                              <span className="select-none absolute bottom-1.5 right-2 text-[12px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
-                                你评 {item.userScore} 分
-                              </span>
-                            </motion.div>
-                          ))}
+                  <p className="select-none text-[13px] text-orange-800 font-medium opacity-90 px-1 border-l-2 border-orange-300 ml-1 pl-2">
+                    在这些细节上，你们的认知出现了明显的“分岔”。
+                  </p>
+                  <div className="space-y-2">
+                    {analysis.gaps.map((item, idx) => (
+                      <div
+                        key={`gap-${idx}`}
+                        className="bg-white/60 backdrop-blur-sm p-3 pb-6 rounded-xl border border-white/50 text-[13px] leading-snug shadow-sm relative"
+                      >
+                        <span className="text-gray-500 block">
+                          “{item.question}”
+                        </span>
+                        <div className="select-none absolute bottom-1.5 right-2 flex gap-1">
+                          <span className="text-[12px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                            {item.diff >= 4 ? '差距大' : '差距小'}
+                          </span>
+                          <span className="text-[12px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                            你打 {item.userScore} 分
+                          </span>
                         </div>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </div>
-        </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {analysis.matches.length > 0 && (
+                <div className="space-y-3 relative">
+                  <button
+                    onClick={() => setShowMatches(!showMatches)}
+                    className="flex items-center justify-between w-full text-left focus:outline-none group z-10 relative"
+                  >
+                    <h4 className="text-[12px] font-bold text-green-700 bg-green-100/50 w-max px-2 py-0.5 rounded-full tracking-wider">
+                      高频共鸣 · MATCHES ({analysis.matches.length})
+                    </h4>
+                    <div className="text-gray-400 group-hover:text-green-600 transition-colors">
+                      <motion.div
+                        animate={{ rotate: showMatches ? 180 : 0 }}
+                      >
+                        <ChevronDown size={14} />
+                      </motion.div>
+                    </div>
+                  </button>
+
+                  <AnimatePresence>
+                    {showMatches && (
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                        className="matches-container overflow-hidden"
+                      >
+                        <div className="space-y-3 pt-1 pb-1">
+                          <p className="select-none text-[13px] text-green-800 font-medium opacity-90 px-1 border-l-2 border-green-300 ml-1 pl-2">
+                            在这里，你们共享着同一种直觉与默契。
+                          </p>
+                          <div className="space-y-2">
+                            {analysis.matches.map((item, idx) => (
+                              <motion.div
+                                key={`match-${idx}`}
+                                initial={{ opacity: 0, y: -15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ 
+                                  duration: 0.4, 
+                                  delay: 0.15 + idx * 0.1,
+                                  ease: "easeOut"
+                                }}
+                                className="bg-white/60 backdrop-blur-sm p-3 pb-6 rounded-xl border border-white/50 text-[13px] leading-snug shadow-sm relative"
+                              >
+                                <span className="text-gray-500 block">
+                                  “{item.question}”
+                                </span>
+                                <span className="select-none absolute bottom-1.5 right-2 text-[12px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                                  你评 {item.userScore} 分
+                                </span>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
 
 
       </div>
@@ -330,10 +334,11 @@ export default function ResultView({
         variants={resultItemVariants}
         className="p-6 bg-white/40 border-t border-white/40 space-y-3 flex-shrink-0 z-20 w-full backdrop-blur-md"
       >
-        <div className="flex gap-3">
+        <div className="flex gap-3 font-sans">
           <button
             onClick={restartQuiz}
-            className="flex-1 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md border border-white/50 hover:border-green-forest hover:text-green-dark text-gray-600 font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+            disabled={quizData?.settings?.allowRepeat === false && alreadySubmitted}
+            className="flex-1 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md border border-white/50 hover:border-green-forest hover:text-green-dark text-gray-600 font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200/50 disabled:hover:border-transparent disabled:text-gray-400"
           >
             <RefreshCcw size={18} />
             再来一次

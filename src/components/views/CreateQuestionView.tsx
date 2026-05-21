@@ -201,7 +201,7 @@ export default function CreateQuestionView({
                 <button
                   key={num}
                   onClick={() => updateScore(currentQuestionIndex, num)}
-                  className={`flex-1 aspect-square max-h-[3rem] sm:max-h-[3.5rem] rounded-xl flex items-center justify-center text-xl sm:text-2xl font-black transition-all duration-[220ms] box-border shadow-sm
+                  className={`flex-1 aspect-square max-h-[3rem] sm:max-h-[3.5rem] rounded-xl flex items-center justify-center text-xl sm:text-2xl font-black transition-all duration-[220ms] box-border
                   ${getScoreStyles(num, selected)}`}
                 >
                   {num}

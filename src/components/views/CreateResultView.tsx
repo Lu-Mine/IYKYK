@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { motion } from "motion/react";
-import { Check, Download, Loader2, Home, ExternalLink, Github, Copy } from "lucide-react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "motion/react";
+import { Check, Download, Loader2, Home, ExternalLink, Github, Copy, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas";
 import { saveQuizToVercel } from "../../lib/api";
@@ -21,6 +22,15 @@ export default function CreateResultView({ hostName, secret, title, description,
   const posterRef = useRef<HTMLDivElement>(null);
   const [posterTitle, setPosterTitle] = useState("从我的试卷里，懂我。");
   const [copied, setCopied] = useState(false);
+  const [showSaveImageModal, setShowSaveImageModal] = useState(false);
+  const [generatedImgUrl, setGeneratedImgUrl] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const isWeChatOrQQ = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent.toLowerCase();
+    return /micromessenger/i.test(ua) || /qq/i.test(ua);
+  }, []);
   const shareUrl = useMemo(() => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://iykyk.xlumi.cn';
     return userid ? `${origin}/customquiz/${userid}` : `${origin}/`;
@@ -38,6 +48,7 @@ export default function CreateResultView({ hostName, secret, title, description,
 
   const handleDownload = async () => {
     if (!posterRef.current) return;
+    setIsGenerating(true);
     try {
       const canvas = await html2canvas(posterRef.current, { 
         scale: 2, 
@@ -107,12 +118,19 @@ export default function CreateResultView({ hostName, secret, title, description,
         }
       });
       const imgData = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = imgData;
-      a.download = `IYKYK-${hostName}的专属问卷.png`;
-      a.click();
+      if (isWeChatOrQQ) {
+        setGeneratedImgUrl(imgData);
+        setShowSaveImageModal(true);
+      } else {
+        const a = document.createElement('a');
+        a.href = imgData;
+        a.download = `IYKYK-${hostName}的专属问卷.png`;
+        a.click();
+      }
     } catch (e) {
       console.error("Poster Generation Error:", e);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -125,7 +143,7 @@ export default function CreateResultView({ hostName, secret, title, description,
       className="flex flex-col flex-1 w-full min-h-0 overflow-hidden relative"
     >
       <ScrollArea className="flex-1 custom-scrollbar w-full" contentClassName="relative min-h-full">
-        <div className="p-6 pb-12 flex flex-col items-center justify-center min-h-full">
+        <div className="p-6 pb-12 flex flex-col items-center justify-start min-h-full">
           <div className="mb-6 text-center">
           <div className="select-none flex flex-col items-center mb-4">
             <p className="text-sm text-gray-400 mb-1 uppercase tracking-[0.2em] font-bold">
@@ -144,9 +162,9 @@ export default function CreateResultView({ hostName, secret, title, description,
              </div>
           </div>
            
-          <p className="text-sm text-gray-500 mt-4 font-medium">你已完成出题！</p>
-          <p className="text-[11px] text-gray-400 mt-1 font-medium italic animate-pulse">
-            可以点击海报处的标题修改标题
+          <p className="text-base text-gray-500 mt-4 font-semibold">你已完成出题！</p>
+          <p className="text-xs text-gray-400 mt-1 font-medium animate-pulse">
+            可以点击海报中的标题来修改。
           </p>
         </div>
 
@@ -219,7 +237,7 @@ export default function CreateResultView({ hostName, secret, title, description,
         </div>
 
         {/* URL and Secret Info */}
-        <div className="mt-8 bg-gray-50/80 w-full max-w-[320px] rounded-2xl p-5 border border-gray-100 flex flex-col items-center text-center shadow-sm">
+        <div className="mt-8 bg-gray-50/80 w-full rounded-2xl p-5 border border-gray-100 flex flex-col items-center text-center shadow-sm">
           <p className="text-sm text-gray-600 font-medium mb-1">查询密语：<span className="font-mono font-bold text-klein-blue select-all text-lg ml-1">{secret}</span></p>
           <div className="text-xs text-gray-400 leading-relaxed mt-2 border-t border-gray-100 pt-3 flex flex-col items-center w-full">
             访问链接
@@ -236,6 +254,7 @@ export default function CreateResultView({ hostName, secret, title, description,
               </button>
             </div>
             并在网页中填写以上密语，即可查看答题情况。
+            <span className="font-extrabold block text-red-800 mb-0.5">请记住或保存好密语。因为密语只会在这里显示唯一的一次。</span>
           </div>
         </div>
       </div>
@@ -246,9 +265,15 @@ export default function CreateResultView({ hostName, secret, title, description,
         <div className="flex gap-3">
           <button
             onClick={handleDownload}
-            className="flex-1 bg-white hover:bg-gray-50 text-gray-800 font-bold py-3.5 rounded-2xl transition-all shadow-sm border border-gray-200 flex justify-center items-center gap-2"
+            disabled={isGenerating}
+            className="flex-1 bg-white hover:bg-gray-50 text-gray-800 font-bold py-3.5 rounded-2xl transition-all shadow-sm border border-gray-200 flex justify-center items-center gap-2 disabled:opacity-70 animate-none"
           >
-            <Download size={18} /> 保存海报
+            {isGenerating ? (
+              <Loader2 size={18} className="animate-spin text-klein-blue" />
+            ) : (
+              <Download size={18} />
+            )}
+            {isGenerating ? "生成中..." : "保存海报"}
           </button>
           <button
             onClick={() => { window.location.href = shareUrl }}
@@ -258,6 +283,68 @@ export default function CreateResultView({ hostName, secret, title, description,
           </button>
         </div>
       </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {showSaveImageModal && (
+            <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowSaveImageModal(false)}
+                className="absolute inset-0 bg-black/85 backdrop-blur-md"
+              />
+
+              {/* Content Box */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", duration: 0.38 }}
+                className="relative z-10 bg-white rounded-3xl p-5 flex flex-col items-center max-w-sm w-full shadow-2xl border border-white/20"
+              >
+                {/* Header with Title and Close Button */}
+                <div className="flex justify-between items-center w-full mb-3 pb-2 border-b border-gray-100">
+                  <h4 className="text-gray-905 font-extrabold text-sm flex items-center gap-1.5 text-klein-blue">
+                    ✨ 专属海报已生成
+                  </h4>
+                  <button
+                    onClick={() => setShowSaveImageModal(false)}
+                    className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Instruction Label */}
+                <div className="bg-blue-50 text-klein-blue text-[11px] rounded-lg p-2 font-medium mb-3 text-center leading-normal border border-blue-200/50 w-full animate-pulse">
+                  💡 长按下方高清晰度图片即可保存到手机相册
+                </div>
+
+                {/* Image container & tag */}
+                <div className="relative rounded-2xl overflow-hidden border border-gray-100 shadow-inner w-full mb-4 max-h-[60vh] flex items-center justify-center bg-gray-50">
+                  <img
+                    src={generatedImgUrl}
+                    alt="海报"
+                    className="max-h-[50vh] object-contain cursor-pointer"
+                  />
+                </div>
+
+                {/* Guide */}
+                <p className="text-xs text-center text-gray-500 font-bold mb-1">
+                  👆 <span className="text-klein-blue font-black">长按图片</span>可以直接保存到手机
+                </p>
+                <p className="text-[10px] text-center text-gray-400">
+                  保存后可将其分享至微信或QQ
+                </p>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   );
 }

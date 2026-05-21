@@ -17,6 +17,8 @@ interface QuizViewProps {
   isReviewMode?: boolean;
   correctScores?: number[];
   onBackToOverview?: () => void;
+  isOverlay?: boolean;
+  shuffledOrder?: number[];
 }
 
 export default function QuizView({
@@ -32,48 +34,44 @@ export default function QuizView({
   isReviewMode,
   correctScores,
   onBackToOverview,
+  isOverlay,
+  shuffledOrder,
 }: QuizViewProps) {
-  useEffect(() => {
-    if (!isReviewMode) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isTransitioning) return;
-
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        if (currentQuestion > 0) {
-          handlePrev();
-        }
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        if (currentQuestion < totalQuestions - 1 && handleNext) {
-          handleNext();
-        }
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (onBackToOverview) {
-          onBackToOverview();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [
-    isReviewMode,
-    isTransitioning,
-    currentQuestion,
-    totalQuestions,
-    handlePrev,
-    handleNext,
-    onBackToOverview,
-  ]);
 
   const getReviewStyles = (score: number) => {
     const isRespondentChoice = userScores[currentQuestion] === score;
     const isCorrectChoice = correctScores && correctScores[currentQuestion] === score;
+
+    // If viewing in the floating window/popover and they got it wrong, highlight correct answer differently
+    if (isOverlay) {
+      const respondentChoice = userScores[currentQuestion];
+      const correctChoice = correctScores ? correctScores[currentQuestion] : null;
+      const isIncorrect = correctChoice !== null && respondentChoice !== correctChoice;
+
+      if (isIncorrect) {
+        if (score === correctChoice) {
+          // Empty/hollow design with only colored numbers and border (空心且只有带颜色的数字和边框)
+          const hollowStyles: Record<number, string> = {
+            1: "text-[#eb776c] border-[#eb776c] bg-transparent border-2 border-solid font-black",
+            2: "text-[#edab85] border-[#edab85] bg-transparent border-2 border-solid font-black",
+            3: "text-[#f3cd82] border-[#f3cd82] bg-transparent border-2 border-solid font-black",
+            4: "text-[#a6ad91] border-[#a6ad91] bg-transparent border-2 border-solid font-black",
+            5: "text-[#8cb8b3] border-[#8cb8b3] bg-transparent border-2 border-solid font-black",
+            6: "text-[#8397c4] border-[#8397c4] bg-transparent border-2 border-solid font-black",
+            7: "text-[#9783ba] border-[#9783ba] bg-transparent border-2 border-solid font-black",
+          };
+          return `${hollowStyles[score] || "text-gray-400 border-gray-400 bg-transparent border-2 border-solid"}`;
+        }
+
+        if (score === respondentChoice) {
+          // The block chosen by the respondent is styled with a filled solid block
+          return getScoreStyles(score, true);
+        }
+
+        return "text-gray-200 border-transparent bg-white/20";
+      }
+    }
 
     if (isCorrectChoice) {
       return getScoreStyles(score, true);
@@ -148,9 +146,11 @@ export default function QuizView({
                 stiffness: 350,
                 damping: 25,
               }}
-              className={`${isReviewMode ? 'bg-white/80 border-blue-200/60 shadow-lg shadow-blue-100/20' : 'bg-green-50/60 border-green-100/50 shadow-sm'} backdrop-blur-md p-6 rounded-2xl border text-lg leading-relaxed text-center font-medium w-full text-balance transition-colors`}
+              className={`${isReviewMode ? "bg-gradient-to-br from-blue-50/85 via-blue-50/50 to-indigo-50/70 border-blue-200/60 shadow-lg shadow-blue-100/20" : "bg-green-50/60 border-green-100/50 shadow-sm"} backdrop-blur-md p-6 rounded-2xl border text-lg leading-relaxed text-center font-medium w-full text-balance transition-colors`}
             >
-              {questions[currentQuestion]}
+              {(shuffledOrder && shuffledOrder[currentQuestion] !== undefined)
+                ? questions[shuffledOrder[currentQuestion]]
+                : questions[currentQuestion]}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -161,7 +161,7 @@ export default function QuizView({
           <span>完全不符合</span>
           <span>完全符合</span>
         </div>
-        <div className="flex justify-between flex-nowrap gap-1.5 sm:gap-2 mb-4 w-full">
+        <div className={`flex justify-between flex-nowrap gap-1.5 sm:gap-2 w-full ${isOverlay ? "" : "mb-4"}`}>
           {[1, 2, 3, 4, 5, 6, 7].map((score) => {
             const isSelected = userScores[currentQuestion] === score;
             return (
@@ -169,7 +169,7 @@ export default function QuizView({
                 key={score}
                 onClick={() => !isReviewMode && handleScore(score)}
                 disabled={isTransitioning || isReviewMode}
-                className={`flex-1 aspect-square max-h-[3rem] sm:max-h-[3.5rem] rounded-xl flex items-center justify-center text-xl sm:text-2xl font-black transition-all duration-[220ms] box-border shadow-sm
+                className={`flex-1 aspect-square max-h-[3rem] sm:max-h-[3.5rem] rounded-xl flex items-center justify-center text-xl sm:text-2xl font-black transition-all duration-[220ms] box-border
               ${isReviewMode ? getReviewStyles(score) : getScoreStyles(score, isSelected)} ${isTransitioning ? "opacity-80" : ""} ${isReviewMode ? "cursor-default" : ""}`}
               >
                 {score}
@@ -178,72 +178,92 @@ export default function QuizView({
           })}
         </div>
 
-        <div className="w-full sm:mt-2 h-10">
-          {isReviewMode ? (
-            <div className="grid grid-cols-3 items-center w-full h-full">
-              {/* Left: Previous button */}
-              <div className="flex justify-start">
-                <button
-                  onClick={handlePrev}
-                  disabled={currentQuestion === 0}
-                  className={`flex items-center gap-1.5 text-sm transition-colors py-2 px-3 rounded-lg flex-shrink-0 ${
-                    currentQuestion === 0
-                      ? "opacity-30 cursor-not-allowed text-gray-400"
-                      : "text-gray-500 hover:text-klein-blue hover:bg-white border border-transparent hover:border-gray-200"
-                  }`}
-                >
-                  <ArrowLeft size={16} />
-                  <span>上一题</span>
-                </button>
-              </div>
+        {isOverlay && isReviewMode && correctScores && userScores[currentQuestion] !== correctScores[currentQuestion] && (
+          <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-gray-500 font-medium select-none bg-blue-50/20 py-1.5 px-3 rounded-lg border border-blue-50/30 w-fit mx-auto">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded bg-blue-500 shrink-0"></span>
+              <span>实心: 对方选择</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded border-2 border-solid border-blue-500 bg-transparent shrink-0"></span>
+              <span>空心: 正确答案</span>
+            </div>
+          </div>
+        )}
 
-              {/* Center: Confirm button */}
-              <div className="flex justify-center">
-                {onBackToOverview && (
-                  <button
-                    onClick={onBackToOverview}
-                    className="px-5 py-2 bg-klein-blue hover:bg-klein-blue-light text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-100/30 transition-all flex items-center gap-1.5 whitespace-nowrap"
-                  >
-                    <span>确认</span>
-                  </button>
-                )}
-              </div>
+        {!isOverlay && (
+          <div className="w-full sm:mt-2 h-10">
+            {isReviewMode ? (
+              <div className="grid grid-cols-3 items-center w-full h-full">
+                {/* Left: Previous button */}
+                <div className="flex justify-start">
+                  {!isOverlay && (
+                    <button
+                      onClick={handlePrev}
+                      disabled={currentQuestion === 0 || isTransitioning}
+                      className={`flex items-center gap-1.5 text-sm transition-colors py-2 px-3 rounded-lg flex-shrink-0 ${
+                        currentQuestion === 0 || isTransitioning
+                          ? "opacity-30 cursor-not-allowed text-gray-400"
+                          : "text-gray-500 hover:text-klein-blue hover:bg-white border border-transparent hover:border-gray-200"
+                      }`}
+                    >
+                      <ArrowLeft size={16} />
+                      <span>上一题</span>
+                    </button>
+                  )}
+                </div>
 
-              {/* Right: Next button */}
-              <div className="flex justify-end">
-                {handleNext && (
+                {/* Center: Confirm button */}
+                <div className="flex justify-center">
+                  {onBackToOverview && (
+                    <button
+                      onClick={onBackToOverview}
+                      disabled={isTransitioning}
+                      className="px-5 py-2 bg-klein-blue hover:bg-klein-blue-light text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-100/30 transition-all flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>确认</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Right: Next button */}
+                <div className="flex justify-end">
+                  {!isOverlay && handleNext && (
+                    <button
+                      onClick={handleNext}
+                      disabled={currentQuestion === totalQuestions - 1 || isTransitioning}
+                      className={`flex items-center gap-1.5 text-sm transition-colors py-2 px-3 rounded-lg flex-shrink-0 ${
+                        currentQuestion === totalQuestions - 1 || isTransitioning
+                          ? "opacity-30 cursor-not-allowed text-gray-400"
+                          : "text-gray-500 hover:text-klein-blue hover:bg-white border border-transparent hover:border-gray-200"
+                      }`}
+                    >
+                      <span>下一题</span>
+                      <ChevronRight size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center w-full h-full">
+                {!isOverlay && (
                   <button
-                    onClick={handleNext}
-                    disabled={currentQuestion === totalQuestions - 1}
+                    onClick={handlePrev}
+                    disabled={currentQuestion === 0 || isTransitioning}
                     className={`flex items-center gap-1.5 text-sm transition-colors py-2 px-3 rounded-lg flex-shrink-0 ${
-                      currentQuestion === totalQuestions - 1
-                        ? "opacity-30 cursor-not-allowed text-gray-400"
-                        : "text-gray-500 hover:text-klein-blue hover:bg-white border border-transparent hover:border-gray-200"
+                      currentQuestion === 0 || isTransitioning
+                        ? "opacity-40 cursor-not-allowed text-gray-400"
+                        : "text-gray-500 hover:text-green-dark hover:bg-white border border-transparent hover:border-gray-200"
                     }`}
                   >
-                    <span>下一题</span>
-                    <ChevronRight size={16} />
+                    <ArrowLeft size={16} />
+                    上一题
                   </button>
                 )}
               </div>
-            </div>
-          ) : (
-            <div className="flex justify-between items-center w-full h-full">
-              <button
-                onClick={handlePrev}
-                disabled={currentQuestion === 0}
-                className={`flex items-center gap-1.5 text-sm transition-colors py-2 px-3 rounded-lg flex-shrink-0 ${
-                  currentQuestion === 0
-                    ? "opacity-40 cursor-not-allowed text-gray-400"
-                    : "text-gray-500 hover:text-green-dark hover:bg-white border border-transparent hover:border-gray-200"
-                }`}
-              >
-                <ArrowLeft size={16} />
-                上一题
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </motion.div>
   );

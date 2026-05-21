@@ -14,6 +14,7 @@ interface OverviewViewProps {
   respondentName?: string;
   hostScores?: number[];
   onBackToResults?: () => void;
+  onSelectQuestion?: (index: number) => void;
 }
 
 export default function OverviewView({
@@ -27,22 +28,9 @@ export default function OverviewView({
   respondentName,
   hostScores,
   onBackToResults,
+  onSelectQuestion,
 }: OverviewViewProps) {
-  useEffect(() => {
-    if (!isReviewMode || !onBackToResults) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        onBackToResults();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isReviewMode, onBackToResults]);
 
   return (
     <motion.div
@@ -54,7 +42,7 @@ export default function OverviewView({
       transition={{ duration: 0.33 }}
       className="flex flex-col flex-1 w-full min-h-0 relative select-none overflow-hidden"
     >
-      <ScrollArea className="mb-2 flex-1 custom-scrollbar w-full" contentClassName="px-6 pb-6 relative min-h-full">
+      <ScrollArea className="mb-2 flex-1 custom-scrollbar w-full" contentClassName="px-6 pb-6 relative">
         <div className="flex flex-col items-center mb-4 mt-6">
           <p className="text-sm text-gray-400 mb-1 uppercase tracking-[0.2em] font-bold">
             {isReviewMode ? "作答详情" : "答题概览"}
@@ -77,8 +65,12 @@ export default function OverviewView({
                 <div
                   key={idx}
                   onClick={() => {
-                    setCurrentQuestion(idx);
-                    setView("quiz");
+                    if (onSelectQuestion) {
+                      onSelectQuestion(idx);
+                    } else {
+                      setCurrentQuestion(idx);
+                      setView("quiz");
+                    }
                   }}
                   className={`relative cursor-pointer hover:bg-white/80 bg-white/50 backdrop-blur-sm border border-white/50 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto ${isReviewMode ? 'hover:border-klein-blue/30' : 'hover:border-green-300'}`}
                 >
@@ -110,8 +102,12 @@ export default function OverviewView({
                 <div
                   key={idx}
                   onClick={() => {
-                    setCurrentQuestion(idx);
-                    setView("quiz");
+                    if (onSelectQuestion) {
+                      onSelectQuestion(idx);
+                    } else {
+                      setCurrentQuestion(idx);
+                      setView("quiz");
+                    }
                   }}
                   className={`relative cursor-pointer hover:bg-white/80 bg-white/50 backdrop-blur-sm border border-white/50 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto ${isReviewMode ? 'hover:border-klein-blue/30' : 'hover:border-green-300'}`}
                 >

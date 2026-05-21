@@ -5,7 +5,11 @@ import 'overlayscrollbars/styles/overlayscrollbars.css';
 export function useGlobalOverlayScrollbars() {
   useEffect(() => {
     const initScrollbars = () => {
-      const elements = document.querySelectorAll('.custom-scrollbar, .overflow-y-auto, .overflow-auto');
+      const elements = document.querySelectorAll(
+        '.custom-scrollbar:not([data-react-scrollarea]):not([data-overlayscrollbars-initialize]):not([data-overlayscrollbars]), ' +
+        '.overflow-y-auto:not([data-react-scrollarea]):not([data-overlayscrollbars-initialize]):not([data-overlayscrollbars]), ' +
+        '.overflow-auto:not([data-react-scrollarea]):not([data-overlayscrollbars-initialize]):not([data-overlayscrollbars])'
+      );
       elements.forEach(el => {
         // Skip body/html
         if (el === document.body || el === document.documentElement) return;

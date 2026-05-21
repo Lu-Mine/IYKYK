@@ -4,6 +4,7 @@ import { motion, Reorder, AnimatePresence, useDragControls } from "motion/react"
 import { GripVertical, Rocket, ArrowUp, Plus, Settings } from "lucide-react";
 import { getScoreStyles } from "../../lib/quizUtils";
 import { ScrollArea } from "../ui/ScrollArea";
+import ConfirmModal from "../ui/ConfirmModal";
 
 interface Props {
   questions: string[];
@@ -14,6 +15,16 @@ interface Props {
   onPublish: () => void;
   onGoToInfo: () => void;
   addNewQuestion: () => void;
+  settings: {
+    allowRepeat: boolean;
+    showAnalysis: boolean;
+    shuffleQuestions: boolean;
+  };
+  setSettings: React.Dispatch<React.SetStateAction<{
+    allowRepeat: boolean;
+    showAnalysis: boolean;
+    shuffleQuestions: boolean;
+  }>>;
 }
 
 interface SortableItemProps {
@@ -63,24 +74,11 @@ const SortableItem: React.FC<SortableItemProps> = ({ item, visualIndex, setCurre
   );
 }
 
-export default function CreateOverviewView({ questions, hostScores, setQuestions, setHostScores, setCurrentQuestionIndex, onPublish, onGoToInfo, addNewQuestion }: Props) {
+export default function CreateOverviewView({ questions, hostScores, setQuestions, setHostScores, setCurrentQuestionIndex, onPublish, onGoToInfo, addNewQuestion, settings, setSettings }: Props) {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (showPublishConfirm) {
-        if (e.key === "Enter") {
-          setShowPublishConfirm(false);
-          onPublish();
-        }
-        if (e.key === "Escape") {
-          setShowPublishConfirm(false);
-        }
-      }
-    };
-    window.addEventListener("keydown", handleGlobalKeyDown);
-    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [showPublishConfirm, onPublish]);
+
 
   // We need stable IDs for Reorder. Generate them once on mount or when questions change length.
   const [items, setItems] = useState<{ id: string, text: string, score: number, index: number }[]>([]);
@@ -123,12 +121,12 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
           <p className="text-sm text-gray-500 mt-1">检查、编辑或拖拽调整题目</p>
         </div>
         <div className="flex flex-col gap-3">
-          <button className="text-sm text-gray-400 hover:text-klein-blue flex justify-end items-center gap-1 transition-colors self-end cursor-default">设置 <Settings size={16} /></button>
+          <button onClick={() => setShowSettingsModal(true)} className="text-sm text-gray-400 hover:text-klein-blue flex justify-end items-center gap-1 transition-colors self-end cursor-pointer">设置 <Settings size={16} /></button>
           <button onClick={onGoToInfo} className="text-sm text-gray-400 hover:text-klein-blue flex items-center gap-1 transition-colors">回到卷首 <ArrowUp size={16} /></button>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 custom-scrollbar" contentClassName="p-6 relative min-h-full">
+      <ScrollArea className="flex-1 custom-scrollbar" contentClassName="p-6 pb-8 relative">
         <Reorder.Group 
           axis="y" 
           values={items} 
@@ -165,50 +163,128 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
 
       {createPortal(
         <AnimatePresence>
-          {showPublishConfirm && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setShowPublishConfirm(false)}
-              className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm pointer-events-auto"
-            >
-              <motion.div 
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                transition={{ duration: 0.2, type: "spring", bounce: 0.3 }}
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center"
+          <ConfirmModal
+            isOpen={showPublishConfirm}
+            onClose={() => setShowPublishConfirm(false)}
+            onConfirm={() => {
+              setShowPublishConfirm(false);
+              setTimeout(() => {
+                onPublish();
+              }, 200);
+            }}
+            title="确定要发布吗？"
+            description="发布之后将无法修改任何内容。"
+            theme="blue"
+            icon={<Rocket size={24} />}
+            confirmText="确认发布"
+          />
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {createPortal(
+        <AnimatePresence>
+          {showSettingsModal && (
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-auto">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowSettingsModal(false)}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              />
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ type: "spring", duration: 0.38, bounce: 0.15 }}
+                className="bg-white/95 rounded-3xl p-6 shadow-2xl max-w-sm w-full mx-4 border border-white/80 backdrop-blur-lg relative z-10 flex flex-col items-center"
               >
-                <div className="w-12 h-12 bg-klein-blue/10 text-klein-blue rounded-full flex items-center justify-center mb-4">
-                  <Rocket size={24} />
+                <div className="flex flex-col items-center mb-6 w-full text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-klein-blue/10 flex items-center justify-center text-klein-blue mb-3">
+                    <Settings className="w-6 h-6 animate-[spin_10s_linear_infinite]" />
+                  </div>
+                  <h3 className="text-xl font-extrabold text-gray-800">问卷设置</h3>
+                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-[0.1em] font-sans">Quiz Settings</p>
                 </div>
-                <h3 className="text-xl font-extrabold text-gray-800 mb-2">确定要发布吗？</h3>
-                <p className="text-gray-500 text-center text-sm mb-6">发布之后将无法修改任何内容。</p>
-                
-                <div className="flex gap-3 w-full">
-                  <button
-                    onClick={() => setShowPublishConfirm(false)}
-                    className="flex-1 py-2.5 rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 font-bold transition-colors"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowPublishConfirm(false);
-                      setTimeout(() => {
-                        onPublish();
-                      }, 200);
-                    }}
-                    className="flex-1 py-2.5 rounded-xl text-white bg-klein-blue hover:bg-klein-blue-light font-bold shadow-md shadow-klein-blue/20 transition-all"
-                  >
-                    确认发布
-                  </button>
+
+                <div className="w-full space-y-5 mb-8">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col text-left">
+                      <span className="text-base font-bold text-gray-800">再来一次</span>
+                      <span className="text-xs text-gray-500 leading-normal mt-0.5">
+                        是否允许用户重复完成试卷。默认打开。若关闭，同一用户名、浏览器或IP仅支持提交一次。
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSettings(prev => ({ ...prev, allowRepeat: !prev.allowRepeat }))}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors outline-none shrink-0 ${
+                        settings.allowRepeat ? "bg-klein-blue" : "bg-gray-300"
+                      }`}
+                    >
+                      <motion.div
+                        layout
+                        className="bg-white w-4 h-4 rounded-full shadow-sm"
+                        animate={{ x: settings.allowRepeat ? 20 : 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col text-left">
+                      <span className="text-base font-bold text-gray-800">展示解析</span>
+                      <span className="text-xs text-gray-500 leading-normal mt-0.5">
+                        若关闭，就不在用户答题结果页面显示深度解析。默认打开。
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSettings(prev => ({ ...prev, showAnalysis: !prev.showAnalysis }))}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors outline-none shrink-0 ${
+                        settings.showAnalysis ? "bg-klein-blue" : "bg-gray-300"
+                      }`}
+                    >
+                      <motion.div
+                        layout
+                        className="bg-white w-4 h-4 rounded-full shadow-sm"
+                        animate={{ x: settings.showAnalysis ? 20 : 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col text-left">
+                      <span className="text-base font-bold text-gray-800">题目乱序</span>
+                      <span className="text-xs text-gray-500 leading-normal mt-0.5">
+                        是否开启题目乱序。开启后，答题用户看到的题目顺序将被打乱（不影响得分映射）。
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSettings(prev => ({ ...prev, shuffleQuestions: !prev.shuffleQuestions }))}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors outline-none shrink-0 ${
+                        settings.shuffleQuestions ? "bg-klein-blue" : "bg-gray-300"
+                      }`}
+                    >
+                      <motion.div
+                        layout
+                        className="bg-white w-4 h-4 rounded-full shadow-sm"
+                        animate={{ x: settings.shuffleQuestions ? 20 : 0 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    </button>
+                  </div>
                 </div>
+
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="w-full bg-klein-blue hover:bg-klein-blue-light text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md shadow-klein-blue/20"
+                >
+                  确认
+                </button>
               </motion.div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>,
         document.body

@@ -31,9 +31,14 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
   const lastActiveHostNameRef = useRef(hostName);
   const [secret, setSecret] = useState("");
   const [title, setTitle] = useState("这一次，由我来定义自己。");
-  const [description, setDescription] = useState("欢迎来到出题模式！\n作为出题者，你可以自由添加你想要的测试题，设置你对自己的评价分数。\n这套问卷将打破常规的本地刻板印象，你可以随意编辑你的考察细节，最终所有的结果都将属于最真实的你。");
+  const [description, setDescription] = useState("欢迎来到出题模式！点击铅笔修改文字。\n作为出题者，你可以自由添加你想要的测试题，并设置自评分数。\n这套问卷中你可以随意编辑你的考察细节，最终所有的结果都将属于最真实的你。");
   const [questions, setQuestions] = useState<string[]>([]);
   const [hostScores, setHostScores] = useState<number[]>([]);
+  const [settings, setSettings] = useState({
+    allowRepeat: true,
+    showAnalysis: true,
+    shuffleQuestions: false,
+  });
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   const handleDebugFill = () => {
@@ -113,16 +118,20 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
         const deviceInfo = `${navigator.userAgent}`;
         const createdAt = new Date().toISOString();
         
+        const defaultDesc = "欢迎来到出题模式！点击铅笔修改文字。\n作为出题者，你可以自由添加你想要的测试题，并设置自评分数。\n这套问卷中你可以随意编辑你的考察细节，最终所有的结果都将属于最真实的你。";
+        const actualDescription = description === defaultDesc ? "用户没有填写问卷描述...没关系，来玩吧！" : description;
+
         const payload = { 
           userId: fullId,
           hostName, 
           secret, 
           title, 
-          description, 
+          description: actualDescription, 
           questions, 
           hostScores,
           deviceInfo,
-          createdAt
+          createdAt,
+          settings
         };
         const id = await saveQuizToVercel(payload);
         setUserid(id);
@@ -216,6 +225,8 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
                 addNewQuestion();
                 setStep("quiz");
               }}
+              settings={settings}
+              setSettings={setSettings}
             />
           </motion.div>
         )}
@@ -226,7 +237,7 @@ export default function CreateQuiz({ onExit, onStepChange, isAIStudio }: CreateQ
               hostName={hostName}
               secret={secret}
               title={title}
-              description={description}
+              description={description === "欢迎来到出题模式！点击铅笔修改文字。\n作为出题者，你可以自由添加你想要的测试题，并设置自评分数。\n这套问卷中你可以随意编辑你的考察细节，最终所有的结果都将属于最真实的你。" ? "用户没有填写问卷描述...没关系，来玩吧！" : description}
               questions={questions}
               hostScores={hostScores}
               onExit={onExit}
