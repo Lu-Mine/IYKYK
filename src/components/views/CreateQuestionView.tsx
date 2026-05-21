@@ -237,6 +237,7 @@ export default function CreateQuestionView({
         <AnimatePresence>
           {showPreset && (
             <motion.div
+              key="preset-modal-overlay"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

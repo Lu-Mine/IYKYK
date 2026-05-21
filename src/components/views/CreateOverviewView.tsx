@@ -115,15 +115,22 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
       transition={{ duration: 0.4, ease: "easeInOut" }}
       className="flex flex-col flex-1 w-full min-h-0 overflow-hidden relative"
     >
-      <div className="pt-8 px-8 pb-4 shrink-0 border-b border-gray-100/50 bg-white/30 backdrop-blur-sm z-10 flex justify-between items-end relative">
-        <div>
-          <h2 className="text-xl font-bold font-display text-klein-blue">完成试卷之前</h2>
-          <p className="text-sm text-gray-500 mt-1">检查、编辑或拖拽调整题目</p>
+      <div className="pt-8 px-8 pb-4 shrink-0 border-b border-gray-100/50 bg-white/30 backdrop-blur-sm z-10 flex flex-col gap-3 relative">
+        <div className="flex justify-between items-end w-full">
+          <div className="max-w-[70%]">
+            <h2 className="text-xl font-bold font-display text-klein-blue">完成试卷之前</h2>
+            <p className="text-sm text-gray-500 mt-1">检查、编辑或拖拽调整题目</p>
+          </div>
+          <div className="flex flex-col gap-3 shrink-0">
+            <button onClick={() => setShowSettingsModal(true)} className="text-sm text-gray-400 hover:text-klein-blue flex justify-end items-center gap-1 transition-colors self-end cursor-pointer">设置 <Settings size={16} /></button>
+            <button onClick={onGoToInfo} className="text-sm text-gray-400 hover:text-klein-blue flex items-center gap-1 transition-colors">回到卷首 <ArrowUp size={16} /></button>
+          </div>
         </div>
-        <div className="flex flex-col gap-3">
-          <button onClick={() => setShowSettingsModal(true)} className="text-sm text-gray-400 hover:text-klein-blue flex justify-end items-center gap-1 transition-colors self-end cursor-pointer">设置 <Settings size={16} /></button>
-          <button onClick={onGoToInfo} className="text-sm text-gray-400 hover:text-klein-blue flex items-center gap-1 transition-colors">回到卷首 <ArrowUp size={16} /></button>
-        </div>
+        <p className="text-sm text-gray-400 flex items-center gap-1.5 leading-relaxed mt-1">
+          <span className="text-klein-blue/70">💡</span> 
+          可点击右上角“设置”修改答题规则，<br/>
+          或点击“回到卷首”并重新编辑问卷基础信息。
+        </p>
       </div>
 
       <ScrollArea className="flex-1 custom-scrollbar" contentClassName="p-6 pb-8 relative">
@@ -164,6 +171,7 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
       {createPortal(
         <AnimatePresence>
           <ConfirmModal
+            key="publish-overview-confirm-modal"
             isOpen={showPublishConfirm}
             onClose={() => setShowPublishConfirm(false)}
             onConfirm={() => {
@@ -185,7 +193,7 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
       {createPortal(
         <AnimatePresence>
           {showSettingsModal && (
-            <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-auto">
+            <div key="settings-overview-modal-overlay" className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-auto">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -236,7 +244,7 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
                     <div className="flex flex-col text-left">
                       <span className="text-base font-bold text-gray-800">展示解析</span>
                       <span className="text-xs text-gray-500 leading-normal mt-0.5">
-                        若关闭，就不在用户答题结果页面显示深度解析。默认打开。
+                        是否在答题结果页面显示解析。若关闭，就不向答题者展示打分差异情况。
                       </span>
                     </div>
                     <button
@@ -258,7 +266,7 @@ export default function CreateOverviewView({ questions, hostScores, setQuestions
                     <div className="flex flex-col text-left">
                       <span className="text-base font-bold text-gray-800">题目乱序</span>
                       <span className="text-xs text-gray-500 leading-normal mt-0.5">
-                        是否开启题目乱序。开启后，答题用户看到的题目顺序将被打乱（不影响得分映射）。
+                        是否开启题目乱序。开启后，答题者打开试卷的题目顺序会被打乱。
                       </span>
                     </div>
                     <button

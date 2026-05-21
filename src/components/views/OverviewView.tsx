@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import { getScoreStyles, getScoreColorText } from "../../lib/quizUtils";
 import { ScrollArea } from "../ui/ScrollArea";
@@ -15,6 +15,7 @@ interface OverviewViewProps {
   hostScores?: number[];
   onBackToResults?: () => void;
   onSelectQuestion?: (index: number) => void;
+  shuffledOrder?: number[];
 }
 
 export default function OverviewView({
@@ -29,7 +30,25 @@ export default function OverviewView({
   hostScores,
   onBackToResults,
   onSelectQuestion,
+  shuffledOrder,
 }: OverviewViewProps) {
+
+  const items = useMemo(() => {
+    return Array.from({ length: questions.length }, (_, i) => {
+      const originalIdx = (shuffledOrder && shuffledOrder[i] !== undefined) ? shuffledOrder[i] : i;
+      return {
+        displayIndex: i + 1,
+        originalIdx,
+        text: questions[originalIdx],
+        userScore: userScores[originalIdx],
+        hostScore: hostScores ? hostScores[originalIdx] : null,
+      };
+    });
+  }, [questions, userScores, hostScores, shuffledOrder]);
+
+  const half = Math.ceil(items.length / 2);
+  const leftCol = items.slice(0, half);
+  const rightCol = items.slice(half);
 
 
   return (
@@ -58,9 +77,9 @@ export default function OverviewView({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-3">
-            {questions.slice(0, Math.ceil(questions.length / 2)).map((question, sliceIdx) => {
-               const idx = sliceIdx;
-               const diff = hostScores ? Math.abs(hostScores[idx] - userScores[idx]) : 0;
+            {leftCol.map((item) => {
+               const idx = item.originalIdx;
+               const diff = item.hostScore !== null ? Math.abs(item.hostScore - item.userScore) : 0;
                return (
                 <div
                   key={idx}
@@ -68,26 +87,26 @@ export default function OverviewView({
                     if (onSelectQuestion) {
                       onSelectQuestion(idx);
                     } else {
-                      setCurrentQuestion(idx);
+                      setCurrentQuestion(item.displayIndex - 1);
                       setView("quiz");
                     }
                   }}
                   className={`relative cursor-pointer hover:bg-white/80 bg-white/50 backdrop-blur-sm border border-white/50 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto ${isReviewMode ? 'hover:border-klein-blue/30' : 'hover:border-green-300'}`}
                 >
                   <div className={`absolute top-1 left-2 font-display font-black text-lg sm:text-xl text-gray-300 transition-colors z-20 ${isReviewMode ? 'group-hover:text-klein-blue/40' : 'group-hover:text-green-forest/40'}`}>
-                    {idx + 1}
+                    {item.displayIndex}
                   </div>
-                  {isReviewMode && hostScores && diff > 0 && (
+                  {isReviewMode && item.hostScore !== null && diff > 0 && (
                     <div className="absolute top-1.5 right-2 text-[10px] sm:text-[11px] font-bold text-red-500 bg-red-50/80 border border-red-100 px-1.5 py-0.5 rounded whitespace-nowrap z-20 shadow-xs">
                       差 {diff} 分
                     </div>
                   )}
                   <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-3 mt-0">
-                    {question}
+                    {item.text}
                   </div>
                   <div className="absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 flex items-center gap-1.5 z-30 opacity-100">
-                    <div className={`text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(userScores[idx], true)} ${isReviewMode ? '' : 'group-hover:scale-110'} transition-transform`}>
-                      {userScores[idx]}
+                    <div className={`text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(item.userScore, true)} ${isReviewMode ? '' : 'group-hover:scale-110'} transition-transform`}>
+                      {item.userScore}
                     </div>
                   </div>
                 </div>
@@ -95,9 +114,9 @@ export default function OverviewView({
             })}
           </div>
           <div className="space-y-3">
-            {questions.slice(Math.ceil(questions.length / 2)).map((question, sliceIdx) => {
-               const idx = sliceIdx + Math.ceil(questions.length / 2);
-               const diff = hostScores ? Math.abs(hostScores[idx] - userScores[idx]) : 0;
+            {rightCol.map((item) => {
+               const idx = item.originalIdx;
+               const diff = item.hostScore !== null ? Math.abs(item.hostScore - item.userScore) : 0;
                return (
                 <div
                   key={idx}
@@ -105,26 +124,26 @@ export default function OverviewView({
                     if (onSelectQuestion) {
                       onSelectQuestion(idx);
                     } else {
-                      setCurrentQuestion(idx);
+                      setCurrentQuestion(item.displayIndex - 1);
                       setView("quiz");
                     }
                   }}
                   className={`relative cursor-pointer hover:bg-white/80 bg-white/50 backdrop-blur-sm border border-white/50 p-2 sm:p-3 rounded-2xl flex flex-col items-center justify-center transition-colors shadow-sm aspect-auto min-h-[8.5rem] sm:min-h-[9.5rem] group z-auto ${isReviewMode ? 'hover:border-klein-blue/30' : 'hover:border-green-300'}`}
                 >
                   <div className={`absolute top-1 left-2 font-display font-black text-lg sm:text-xl text-gray-300 transition-colors z-20 ${isReviewMode ? 'group-hover:text-klein-blue/40' : 'group-hover:text-green-forest/40'}`}>
-                    {idx + 1}
+                    {item.displayIndex}
                   </div>
-                  {isReviewMode && hostScores && diff > 0 && (
+                  {isReviewMode && item.hostScore !== null && diff > 0 && (
                     <div className="absolute top-1.5 right-2 text-[10px] sm:text-[11px] font-bold text-red-500 bg-red-50/80 border border-red-100 px-1.5 py-0.5 rounded whitespace-nowrap z-20 shadow-xs">
                       差 {diff} 分
                     </div>
                   )}
                   <div className="text-xs sm:text-sm text-gray-600 font-medium text-left px-2 w-full relative z-10 line-clamp-3 mt-0">
-                    {question}
+                    {item.text}
                   </div>
                   <div className="absolute bottom-2 right-2 sm:bottom-2.5 sm:right-2.5 flex items-center gap-1.5 z-30 opacity-100">
-                    <div className={`text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(userScores[idx], true)} ${isReviewMode ? '' : 'group-hover:scale-110'} transition-transform`}>
-                      {userScores[idx]}
+                    <div className={`text-xs sm:text-sm font-bold w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg ${getScoreStyles(item.userScore, true)} ${isReviewMode ? '' : 'group-hover:scale-110'} transition-transform`}>
+                      {item.userScore}
                     </div>
                   </div>
                 </div>

@@ -184,3 +184,70 @@ button {
     min-height: 0 !important;
   }
 }
+
+/* ============================================================== */
+/* GPU-Accelerated Frosted Glass (Backdrop Filter) Optimization   */
+/* ============================================================== */
+
+/* Force all utility backdrop blurs to include active -webkit- vendor prefixes */
+.backdrop-blur-sm {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.backdrop-blur-md {
+  -webkit-backdrop-filter: blur(12px) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.backdrop-blur-lg {
+  -webkit-backdrop-filter: blur(16px) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+.backdrop-blur-xl {
+  -webkit-backdrop-filter: blur(24px) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+.backdrop-blur-2xl {
+  -webkit-backdrop-filter: blur(40px) !important;
+  backdrop-filter: blur(40px) !important;
+}
+
+/* 
+  Custom styles for elements with glass effects that are animating/moving.
+  These properties force the browser to combine layers and keep backdrop-filter active.
+*/
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl,
+.backdrop-blur-2xl {
+  /* Prevent browser from flattening the back-layered pixels in the composited render pipeline */
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+  -webkit-transform-style: preserve-3d !important;
+  transform-style: preserve-3d !important;
+  
+  /* Retain composition texture buffer on WebKit during spring motion/layout transforms */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  
+  /* Signal to Chromium compositor to process backdrop filters and style layers dynamically */
+  will-change: transform, opacity, filter, backdrop-filter !important;
+}
+
+/* 
+  Parent containers of glass elements being animated with Framer Motion (x, y, scale transforms).
+  By setting preserve-3d, we keep child filtered layers coupled to the background coordinate space.
+*/
+.glass-parent-container {
+  -webkit-transform-style: preserve-3d !important;
+  transform-style: preserve-3d !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+  
+  /* Avoid default will-change: transform layer isolation if browser drops filters */
+  will-change: auto !important;
+}

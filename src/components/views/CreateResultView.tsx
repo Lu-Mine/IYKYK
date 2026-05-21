@@ -287,7 +287,7 @@ export default function CreateResultView({ hostName, secret, title, description,
       {createPortal(
         <AnimatePresence>
           {showSaveImageModal && (
-            <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4">
+            <div key="save-image-result-modal" className="fixed inset-0 z-[1100] flex items-center justify-center p-4">
               {/* Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -318,10 +318,6 @@ export default function CreateResultView({ hostName, secret, title, description,
                   </button>
                 </div>
 
-                {/* Instruction Label */}
-                <div className="bg-blue-50 text-klein-blue text-[11px] rounded-lg p-2 font-medium mb-3 text-center leading-normal border border-blue-200/50 w-full animate-pulse">
-                  💡 长按下方高清晰度图片即可保存到手机相册
-                </div>
 
                 {/* Image container & tag */}
                 <div className="relative rounded-2xl overflow-hidden border border-gray-100 shadow-inner w-full mb-4 max-h-[60vh] flex items-center justify-center bg-gray-50">
@@ -335,9 +331,6 @@ export default function CreateResultView({ hostName, secret, title, description,
                 {/* Guide */}
                 <p className="text-xs text-center text-gray-500 font-bold mb-1">
                   👆 <span className="text-klein-blue font-black">长按图片</span>可以直接保存到手机
-                </p>
-                <p className="text-[10px] text-center text-gray-400">
-                  保存后可将其分享至微信或QQ
                 </p>
               </motion.div>
             </div>

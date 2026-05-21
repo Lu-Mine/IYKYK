@@ -12,6 +12,7 @@ import ResultView from "./components/views/ResultView";
 import CreateQuiz from "./components/CreateQuiz";
 import ResultsListView from "./components/views/ResultsListView";
 import ConfirmModal from "./components/ui/ConfirmModal";
+import { Analytics } from "@vercel/analytics/react";
 
 type ViewState = "home" | "quiz" | "overview" | "result" | "resultsList";
 
@@ -33,14 +34,22 @@ const WaveBackground = ({ active }: { active: boolean }) => {
               duration: active ? 1.1 : 1.5,
               ease: active ? [0.16, 1, 0.3, 1] : [0.3, 0, 0.8, 0.15],
             }}
-            className="absolute top-0 bottom-0 left-0 w-full will-change-transform opacity-40"
+            className="absolute top-0 bottom-0 left-0 w-full will-change-transform opacity-80"
           >
-            <div className="absolute top-0 bottom-0 left-0 w-[130vmax] bg-[#ebf1fa]" />
+            <div className="absolute top-0 bottom-0 left-0 w-[96vmax] bg-[#ebf1fa]" />
             <div 
-              className="absolute top-0 bottom-0 left-[130vmax] w-[45vmax] origin-left animate-wave-breathe-1 will-change-transform"
+              className="absolute top-0 bottom-0 left-[96vmax] w-[45vmax] origin-left animate-wave-breathe-1 will-change-transform"
             >
               <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full text-[#ebf1fa]" style={{ overflow: "visible" }}>
-                <path fill="currentColor" d="M0,0 C120,180 150,420 80,650 C20,800 100,920 0,1000 Z" />
+                {/* Main continuous detailed rolling wave */}
+                <path fill="currentColor" d="M0,0 C30,70 85,130 65,220 C45,310 115,410 85,500 C55,590 95,680 70,780 C45,880 75,940 0,1000 Z" />
+                {/* Soft foam edge highlight */}
+                <path fill="none" stroke="rgba(255, 255, 255, 0.65)" strokeWidth="4px" strokeLinecap="round" d="M0,0 C30,70 85,130 65,220 C45,310 115,410 85,500 C55,590 95,680 70,780 C45,880 75,940 0,1000" />
+                {/* Sparkling wave particles/bubbles */}
+                <circle cx="75" cy="120" r="1.5" className="fill-white opacity-40 animate-pulse" />
+                <circle cx="82" cy="270" r="2.2" className="fill-white opacity-30 animate-pulse" style={{ animationDelay: '1s' }} />
+                <circle cx="68" cy="580" r="1.8" className="fill-white opacity-45 animate-pulse" style={{ animationDelay: '2s' }} />
+                <circle cx="72" cy="880" r="2.5" className="fill-white opacity-35 animate-pulse" style={{ animationDelay: '0.5s' }} />
               </svg>
             </div>
           </motion.div>
@@ -55,12 +64,20 @@ const WaveBackground = ({ active }: { active: boolean }) => {
             }}
             className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
           >
-            <div className="absolute top-0 bottom-0 left-0 w-[118vmax] bg-[#eef4f9]" />
+            <div className="absolute top-0 bottom-0 left-0 w-[82vmax] bg-[#eef4f9]" />
             <div 
-              className="absolute top-0 bottom-0 left-[118vmax] w-[42vmax] origin-left animate-wave-breathe-2 will-change-transform"
+              className="absolute top-0 bottom-0 left-[82vmax] w-[35vmax] origin-left animate-wave-breathe-2 will-change-transform"
             >
               <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full text-[#eef4f9]" style={{ overflow: "visible" }}>
-                <path fill="currentColor" d="M0,0 C60,220 130,450 70,700 C20,830 80,940 0,1000 Z" />
+                {/* Main continuous detailed rolling wave */}
+                <path fill="currentColor" d="M0,0 C50,90 100,180 80,300 C60,420 110,500 85,600 C60,700 100,800 75,880 C50,940 60,970 0,1000 Z" />
+                {/* Soft foam edge highlight */}
+                <path fill="none" stroke="rgba(255, 255, 255, 0.6)" strokeWidth="3.5" strokeLinecap="round" d="M0,0 C50,90 100,180 80,300 C60,420 110,500 85,600 C60,700 100,800 75,880" />
+                {/* Sparkling wave particles/bubbles */}
+                <circle cx="85" cy="180" r="2.0" className="fill-white opacity-45 animate-pulse" style={{ animationDelay: '0.3s' }} />
+                <circle cx="88" cy="350" r="1.5" className="fill-white opacity-50 animate-pulse" style={{ animationDelay: '1.3s' }} />
+                <circle cx="78" cy="670" r="2.8" className="fill-white opacity-35 animate-pulse" style={{ animationDelay: '2.3s' }} />
+                <circle cx="65" cy="920" r="2.0" className="fill-white opacity-45 animate-pulse" style={{ animationDelay: '0.8s' }} />
               </svg>
             </div>
           </motion.div>
@@ -75,12 +92,19 @@ const WaveBackground = ({ active }: { active: boolean }) => {
             }}
             className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
           >
-            <div className="absolute top-0 bottom-0 left-0 w-[107vmax] bg-[#e4eff7]" />
+            <div className="absolute top-0 bottom-0 left-0 w-[68vmax] bg-[#e4eff7]" />
             <div 
-              className="absolute top-0 bottom-0 left-[107vmax] w-[45vmax] origin-left animate-wave-breathe-3 will-change-transform"
+              className="absolute top-0 bottom-0 left-[68vmax] w-[35vmax] origin-left animate-wave-breathe-3 will-change-transform"
             >
               <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full text-[#e4eff7]" style={{ overflow: "visible" }}>
-                <path fill="currentColor" d="M0,0 C140,280 40,550 90,780 C110,870 50,940 0,1000 Z" />
+                {/* Main continuous detailed rolling wave */}
+                <path fill="currentColor" d="M0,0 C70,110 50,220 90,350 C120,430 70,550 95,660 C110,720 75,840 85,920 C90,960 45,980 0,1000 Z" />
+                {/* Soft foam edge highlight */}
+                <path fill="none" stroke="rgba(255, 255, 255, 0.55)" strokeWidth="4" strokeLinecap="round" d="M0,0 C70,110 50,220 90,350 C120,430 70,550 95,660 C110,720 75,840 85,920" />
+                {/* Sparkling wave particles/bubbles */}
+                <circle cx="70" cy="220" r="2.3" className="fill-white opacity-50 animate-pulse" style={{ animationDelay: '0.7s' }} />
+                <circle cx="90" cy="480" r="1.8" className="fill-white opacity-40 animate-pulse" style={{ animationDelay: '1.7s' }} />
+                <circle cx="82" cy="740" r="2.6" className="fill-white opacity-45 animate-pulse" style={{ animationDelay: '2.7s' }} />
               </svg>
             </div>
           </motion.div>
@@ -95,19 +119,37 @@ const WaveBackground = ({ active }: { active: boolean }) => {
             }}
             className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
           >
-            <div className="absolute top-0 bottom-0 left-0 w-[96vmax] bg-gradient-to-br from-[#dce8f5] via-[#cadff5] to-[#b6d2f0]" />
+            <div className="absolute top-0 bottom-0 left-0 w-[54vmax] bg-gradient-to-br from-[#dce8f5] via-[#cadff5] to-[#b6d2f0]" />
             <div 
-              className="absolute top-0 bottom-0 left-[96vmax] w-[42vmax] origin-left animate-wave-breathe-4 will-change-transform"
+              className="absolute top-0 bottom-0 left-[54vmax] w-[45vmax] origin-left animate-wave-breathe-4 will-change-transform"
             >
               <svg viewBox="0 0 100 1000" preserveAspectRatio="none" className="w-full h-full" style={{ overflow: "visible" }}>
                 <defs>
-                  <linearGradient id="wave-grad-premium" x1="0%" y1="0%" x2="0%" y2="100%">
+                   <linearGradient id="wave-grad-premium" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" stopColor="#dce8f5" />
                     <stop offset="50%" stopColor="#cadff5" />
                     <stop offset="100%" stopColor="#b6d2f0" />
                   </linearGradient>
                 </defs>
-                <path fill="url(#wave-grad-premium)" d="M0,0 C50,180 130,480 40,680 C-5,780 70,930 0,1000 V0 Z" />
+                {/* Main continuous detailed rolling wave */}
+                <path fill="url(#wave-grad-premium)" d="M0,0 C75,100 125,220 70,320 C30,400 100,500 55,600 C15,680 80,780 50,880 C25,950 65,980 0,1000 V0 Z" />
+                
+                {/* Dual-layer high-fidelity wave foam peaks */}
+                {/* Foam backing (Broad gradient-like mist rim) */}
+                <path fill="none" stroke="rgba(255, 255, 255, 0.75)" strokeWidth="6" strokeLinecap="round" opacity="0.75" d="M0,0 C75,100 125,220 70,320 C30,400 100,500 55,600 C15,680 80,780 50,880" />
+                {/* Foam foreground (Crisp white foam tip) */}
+                <path fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" opacity="0.95" d="M0,0 C74,100 124,220 69,320 C29,400 99,500 54,600 C14,680 79,780 49,880" />
+
+                {/* Rich sparkling wave particles/bubbles */}
+                <circle cx="82" cy="140" r="2.5" className="fill-white opacity-60 animate-pulse" />
+                <circle cx="95" cy="240" r="1.5" className="fill-white opacity-70 animate-pulse" style={{ animationDelay: '1.2s' }} />
+                <circle cx="78" cy="340" r="3.0" className="fill-white opacity-40 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                <circle cx="92" cy="410" r="1.2" className="fill-white opacity-80 animate-pulse" style={{ animationDelay: '2.4s' }} />
+                <circle cx="65" cy="540" r="2.2" className="fill-white opacity-60 animate-pulse" style={{ animationDelay: '1.4s' }} />
+                <circle cx="85" cy="620" r="2.8" className="fill-white opacity-55 animate-pulse" style={{ animationDelay: '1.8s' }} />
+                <circle cx="60" cy="710" r="2.0" className="fill-white opacity-70 animate-pulse" style={{ animationDelay: '0.9s' }} />
+                <circle cx="80" cy="810" r="1.8" className="fill-white opacity-75 animate-pulse" style={{ animationDelay: '2.1s' }} />
+                <circle cx="55" cy="900" r="3.2" className="fill-white opacity-50 animate-pulse" style={{ animationDelay: '1.6s' }} />
               </svg>
             </div>
           </motion.div>
@@ -615,11 +657,50 @@ export default function App() {
     }
   };
 
+  const handleOpenSecretModalOrViewDirectly = async () => {
+    let quizId = quizData.userId || 'default_quiz';
+    if (!quizData.userId) {
+      const path = window.location.pathname;
+      const match = path.match(/\/customquiz\/([^/?#]+)/);
+      const urlParams = new URLSearchParams(window.location.search);
+      let qId = urlParams.get('id');
+      if (match && match[1]) {
+        qId = decodeURIComponent(match[1]);
+      }
+      quizId = qId || 'default_quiz';
+    }
+    const savedSecret = sessionStorage.getItem(`iykyk_verified_secret_${quizId}`);
+    if (savedSecret) {
+      try {
+        await handleViewResults(savedSecret);
+      } catch (err: any) {
+        sessionStorage.removeItem(`iykyk_verified_secret_${quizId}`);
+        setShowSecretModal(true);
+      }
+    } else {
+      setShowSecretModal(true);
+    }
+  };
+
   const handleSecretSubmit = async () => {
     if (!secret.trim()) return;
     setSecretError("");
     try {
       await handleViewResults(secret);
+      
+      let quizId = quizData.userId || 'default_quiz';
+      if (!quizData.userId) {
+        const path = window.location.pathname;
+        const match = path.match(/\/customquiz\/([^/?#]+)/);
+        const urlParams = new URLSearchParams(window.location.search);
+        let qId = urlParams.get('id');
+        if (match && match[1]) {
+          qId = decodeURIComponent(match[1]);
+        }
+        quizId = qId || 'default_quiz';
+      }
+      sessionStorage.setItem(`iykyk_verified_secret_${quizId}`, secret);
+
       setShowSecretModal(false);
       setSecret("");
     } catch (err: any) {
@@ -757,7 +838,7 @@ export default function App() {
                 initial={{ x: "-150vw", opacity: 0 }}
                 animate={{ x: 0, opacity: 1, transition: { delay: 0.75, duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
                 exit={{ x: "-150vw", opacity: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
-                className="w-full h-full flex flex-col min-h-0"
+                className="w-full h-full flex flex-col min-h-0 glass-parent-container"
               >
                 <div className="w-full h-full bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-xl overflow-hidden flex flex-col relative z-10 min-h-0">
                   <CreateQuiz key="create-quiz" onExit={() => { hasSwitchedMode.current = true; setIsCreatingMode(false) }} onStepChange={setCreateStep} isAIStudio={isAIStudio} />
@@ -770,7 +851,7 @@ export default function App() {
                 initial={{ x: "150vw", opacity: 0 }}
                 animate={{ x: 0, opacity: 1, transition: { delay: 0.75, duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
                 exit={{ x: "150vw", opacity: 0, transition: { duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } }}
-                className={`w-full flex flex-col min-h-0 relative ${view === 'resultsList' ? 'h-auto max-h-[80vh] pb-2' : 'h-full'}`}
+                className={`w-full flex flex-col min-h-0 relative glass-parent-container ${view === 'resultsList' ? 'h-auto max-h-[80vh] pb-2' : 'h-full'}`}
               >
                 <motion.div 
                    layout 
@@ -859,6 +940,7 @@ export default function App() {
                         setUserScores([]);
                         setView("resultsList");
                       }}
+                      shuffledOrder={(!reviewResult && quizData.settings?.shuffleQuestions) ? shuffledOrder : undefined}
                     />
                   )}
 
@@ -911,7 +993,7 @@ export default function App() {
                       restartQuiz={restartQuiz}
                       isInitialSnakeDone={isInitialSnakeDone}
                       setIsInitialSnakeDone={setIsInitialSnakeDone}
-                      onOpenAdminDialog={() => setShowSecretModal(true)}
+                      onOpenAdminDialog={handleOpenSecretModalOrViewDirectly}
                       alreadySubmitted={alreadySubmitted}
                     />
                   )}
@@ -943,7 +1025,7 @@ export default function App() {
             >
               {isCustomQuiz && !quizLoadError && (
                 <button
-                  onClick={() => setShowSecretModal(true)}
+                  onClick={handleOpenSecretModalOrViewDirectly}
                   className="text-sm font-medium text-klein-blue hover:text-klein-blue-light transition-colors flex items-center gap-1.5 px-4 py-2 rounded-full hover:bg-klein-blue/5"
                 >
                   <Users size={16} />
@@ -1047,6 +1129,7 @@ export default function App() {
       <AnimatePresence>
         {showSecretModal && (
           <motion.div 
+            key="secret-word-modal-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1164,6 +1247,22 @@ export default function App() {
                     newScores[activeOverlayQuestion] = score;
                     return newScores;
                   });
+                  if (quizData.settings?.shuffleQuestions && shuffledOrder.length > 0) {
+                    const seqIndex = shuffledOrder.indexOf(activeOverlayQuestion);
+                    if (seqIndex !== -1) {
+                      setVisualUserScores((prevScores) => {
+                        const newScores = [...prevScores];
+                        newScores[seqIndex] = score;
+                        return newScores;
+                      });
+                    }
+                  } else {
+                    setVisualUserScores((prevScores) => {
+                      const newScores = [...prevScores];
+                      newScores[activeOverlayQuestion] = score;
+                      return newScores;
+                    });
+                  }
                   setTimeout(() => {
                     setActiveOverlayQuestion(null);
                   }, 100);

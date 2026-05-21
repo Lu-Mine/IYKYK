@@ -64,9 +64,27 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
       animate="center"
       exit="exit"
       variants={{
-        enter: { opacity: 0 },
-        center: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
-        exit: { opacity: 0, transition: { staggerChildren: 0.02, staggerDirection: -1, duration: 0.17 } },
+        enter: { opacity: 0, y: 40 },
+        center: { 
+          opacity: 1, 
+          y: 0, 
+          transition: { 
+            type: "spring",
+            stiffness: 100,
+            damping: 18,
+            staggerChildren: 0.1, 
+            delayChildren: 0.05 
+          } 
+        },
+        exit: { 
+          opacity: 0, 
+          y: -20,
+          transition: { 
+            duration: 0.17,
+            staggerChildren: 0.02, 
+            staggerDirection: -1 
+          } 
+        },
       }}
       className="flex flex-col flex-1 w-full min-h-0 overflow-hidden"
     >
@@ -237,6 +255,7 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
         <AnimatePresence>
           {showSecretError && (
             <motion.div
+               key="secret-error-toast-motion"
                initial={{ opacity: 0, y: -50 }}
                animate={{ opacity: 1, y: 0 }}
                exit={{ opacity: 0, y: -50 }}
@@ -248,6 +267,7 @@ export default function CreateInfoView({ hostName, setHostName, secret, setSecre
             </motion.div>
           )}
           <ConfirmModal
+            key="exit-quiz-confirm-modal"
             isOpen={showExitConfirm}
             onClose={() => setShowExitConfirm(false)}
             onConfirm={() => {

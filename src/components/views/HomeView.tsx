@@ -28,7 +28,7 @@ export function HomeGreenWindow({ commitHash, delay = 0.4, userId }: { commitHas
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: "2.5rem", opacity: 0, transition: { duration: 0.3 } }}
       transition={{ delay: delay, duration: 0.6, type: "spring", bounce: 0.3 }}
-      className="absolute top-0 inset-x-0 h-[5rem] z-0 flex flex-col pointer-events-none"
+      className="absolute top-0 inset-x-0 h-[5rem] z-0 flex flex-col pointer-events-none glass-parent-container"
     >
       <div className="flex-1 bg-[#e6ebd9]/70 backdrop-blur-xl rounded-t-3xl shadow-[0_-8px_16px_-4px_rgba(0,0,0,0.1)] border border-white/30 px-6 leading-none block pointer-events-auto">
         <div className="h-[2.5rem] flex justify-between items-center">
