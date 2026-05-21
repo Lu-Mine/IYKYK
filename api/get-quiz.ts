@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from './_lib/db.js';
+import { QUESTIONS, HOST_SCORES, HOST_NAME } from '../src/lib/constants.js';
 
 export default async function handler(req: any, res: any) {
   const quizId = req.query.quizId;
@@ -10,19 +11,35 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const db = await getDb();
-    let query: any = {};
-    if (ObjectId.isValid(quizId)) {
-      query = { _id: new ObjectId(quizId) };
+    let quizData: any = null;
+    let db: any = null;
+
+    if (quizId === 'default_quiz') {
+      quizData = {
+        _id: 'default_quiz',
+        userId: 'default_quiz',
+        hostName: HOST_NAME,
+        title: "你和我，见识同一个我吗？",
+        description: "",
+        questions: QUESTIONS,
+        hostScores: HOST_SCORES,
+        settings: { allowRepeat: true, showAnalysis: true, shuffleQuestions: false }
+      };
     } else {
-      query = { $or: [{ _id: quizId }, { userId: quizId }] };
-    }
+      db = await getDb();
+      let query: any = {};
+      if (ObjectId.isValid(quizId)) {
+        query = { _id: new ObjectId(quizId) };
+      } else {
+        query = { $or: [{ _id: quizId }, { userId: quizId }] };
+      }
 
-    const quizData: any = await db.collection('Quizzes').findOne(query);
-    console.log('Quiz query result:', quizData ? 'Found' : 'Not Found');
+      quizData = await db.collection('Quizzes').findOne(query);
+      console.log('Quiz query result:', quizData ? 'Found' : 'Not Found');
 
-    if (!quizData) {
-      return res.status(404).json({ error: 'Quiz not found' });
+      if (!quizData) {
+        return res.status(404).json({ error: 'Quiz not found' });
+      }
     }
 
     // Ensure _id and userId are properly mapped as strings
@@ -38,6 +55,9 @@ export default async function handler(req: any, res: any) {
     let hasSubmitted = false;
 
     if (cleanQuizData.settings?.allowRepeat === false && (participantName || browserId)) {
+      if (!db) {
+        db = await getDb();
+      }
       const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || '').toString().split(',')[0].trim();
       const orConditions: any[] = [];
       if (participantName) {

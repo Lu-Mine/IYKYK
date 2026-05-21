@@ -34,29 +34,29 @@
   }
 
   @keyframes bg-pan-gpu {
-    0% { transform: translate3d(-3%, -2%, 0) scale(1.05) rotate(0deg); }
-    50% { transform: translate3d(3%, 2%, 0) scale(1.1) rotate(0.8deg); }
-    100% { transform: translate3d(-3%, -2%, 0) scale(1.05) rotate(0deg); }
+    0% { transform: translate3d(-1%, -1%, 0) scale(1.02); }
+    50% { transform: translate3d(1%, 1%, 0) scale(1.04); }
+    100% { transform: translate3d(-1%, -1%, 0) scale(1.02); }
   }
 
   @keyframes wave-breathe-1 {
-    0% { transform: translate3d(0, 0, 0) scaleX(1) rotate(0deg); }
-    100% { transform: translate3d(3%, -1%, 0) scaleX(1.15) rotate(0.5deg); }
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(3%, -1.5%, 0); }
   }
 
   @keyframes wave-breathe-2 {
-    0% { transform: translate3d(0, 0, 0) scaleX(1) rotate(0deg); }
-    100% { transform: translate3d(-2%, 2%, 0) scaleX(0.88) rotate(-0.7deg); }
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-2.5%, 2%, 0); }
   }
 
   @keyframes wave-breathe-3 {
-    0% { transform: translate3d(0, 0, 0) scaleX(1) rotate(0deg); }
-    100% { transform: translate3d(1.5%, -1.5%, 0) scaleX(1.12) rotate(0.4deg); }
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(2%, -1.8%, 0); }
   }
 
   @keyframes wave-breathe-4 {
-    0% { transform: translate3d(0, 0, 0) scaleX(1) rotate(0deg); }
-    100% { transform: translate3d(-1%, 1%, 0) scaleX(0.92) rotate(-0.3deg); }
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-1.5%, 1.2%, 0); }
   }
 }
 
@@ -86,7 +86,7 @@ button {
 
 @layer base {
   /* ============================================================== */
-  /* 全局智能 GPU 硬件加速 & 渲染优化                                 */
+  /* 全局智能 GPU 渲染优化                                            */
   /* ============================================================== */
   *, *::before, *::after {
     /* 开启高精度字体抗锯齿，使动画过渡中字体边缘完美平滑且不发虚 */
@@ -95,39 +95,15 @@ button {
   }
 
   /* 
-    对真正执行动画、过渡或使用 Framer Motion 的元素启用高性能 GPU 加速。
-    这能全局强制触发核心动画的 GPU 硬件渲染，同时避免由于滥用 translateZ 
-    给所有 div 导致 GPU 显存溢出（Layer Explosion 导致的严重卡顿）。
+    使用标准的 browser composition 对关键大面积动画使用 will-change。
+    避免对通用选择器、Framer Motion 所有组件、SVG 图标等使用强制 translateZ(0) 和 will-change，
+    以防止移动端产生“图层爆炸”（Layer Explosion）导致显存溢出，产生闪烁、掉帧甚至页面白屏。
   */
-  [data-framer-component-type],
-  .motion-div,
-  .will-change-transform,
-  .will-change-opacity,
   .animate-wave-breathe-1,
   .animate-wave-breathe-2,
   .animate-wave-breathe-3,
-  .animate-wave-breathe-4,
-  .animate-bg-pan-gpu {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    perspective: 1000px;
-    transform: translateZ(0);
-    will-change: transform, opacity;
-  }
-
-  /* 进一步优化高频动画元素的重绘与混合渲染 */
-  svg, img, video {
-    /* 强硬启用硬件合成层，确保矢量图与多媒体在进行 2D 位移、缩放时流畅不卡顿 */
-    transform: translate3d(0, 0, 0);
-  }
-
-  /* ！！！重要：规避 fixed 元素的 GPU 加速，否则会破坏全局绝对/固定定位 ！！！*/
-  .fixed, [class*="fixed"], [style*="position: fixed"] {
-    -webkit-backface-visibility: visible !important;
-    backface-visibility: visible !important;
-    perspective: none !important;
-    transform: none !important;
-    will-change: auto !important;
+  .animate-wave-breathe-4 {
+    will-change: transform;
   }
   /* ============================================================== */
 

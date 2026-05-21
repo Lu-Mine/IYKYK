@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDb } from './_lib/db.js';
-import { QUESTIONS } from '../src/lib/constants.js';
+import { QUESTIONS, HOST_SCORES } from '../src/lib/constants.js';
 
 function calculateScore(userScores: number[], hostScores: number[], totalQuestions: number): number {
   if (!totalQuestions || totalQuestions <= 0) return 0;
@@ -47,6 +47,7 @@ export default async function handler(req: any, res: any) {
       quizData = { 
         secret: 'IfYouKnowYouKnow',
         questions: QUESTIONS,
+        hostScores: HOST_SCORES,
       };
     } else {
       let query: any = {};

@@ -34,7 +34,6 @@ const WaveBackground = ({ active }: { active: boolean }) => {
               ease: active ? [0.16, 1, 0.3, 1] : [0.3, 0, 0.8, 0.15],
             }}
             className="absolute top-0 bottom-0 left-0 w-full will-change-transform opacity-40"
-            style={{ filter: "drop-shadow(-2px 0px 6px rgba(0, 47, 120, 0.02))" }}
           >
             <div className="absolute top-0 bottom-0 left-0 w-[130vmax] bg-[#ebf1fa]" />
             <div 
@@ -55,7 +54,6 @@ const WaveBackground = ({ active }: { active: boolean }) => {
               ease: active ? [0.16, 1, 0.3, 1] : [0.3, 0, 0.8, 0.15],
             }}
             className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
-            style={{ filter: "drop-shadow(-4px 0px 10px rgba(0, 47, 120, 0.04))" }}
           >
             <div className="absolute top-0 bottom-0 left-0 w-[118vmax] bg-[#eef4f9]" />
             <div 
@@ -76,7 +74,6 @@ const WaveBackground = ({ active }: { active: boolean }) => {
               ease: active ? [0.16, 1, 0.3, 1] : [0.3, 0, 0.8, 0.15],
             }}
             className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
-            style={{ filter: "drop-shadow(-6px 0px 14px rgba(0, 47, 120, 0.06))" }}
           >
             <div className="absolute top-0 bottom-0 left-0 w-[107vmax] bg-[#e4eff7]" />
             <div 
@@ -97,7 +94,6 @@ const WaveBackground = ({ active }: { active: boolean }) => {
               ease: active ? [0.16, 1, 0.3, 1] : [0.3, 0, 0.8, 0.15],
             }}
             className="absolute top-0 bottom-0 left-0 w-full will-change-transform"
-            style={{ filter: "drop-shadow(-8px 0px 18px rgba(0, 47, 120, 0.08))" }}
           >
             <div className="absolute top-0 bottom-0 left-0 w-[96vmax] bg-gradient-to-br from-[#dce8f5] via-[#cadff5] to-[#b6d2f0]" />
             <div 
@@ -683,7 +679,7 @@ export default function App() {
     <div className={`h-[100dvh] text-gray-dark font-sans flex flex-col items-center px-4 pt-6 pb-6 sm:px-8 sm:pt-12 sm:pb-12 overflow-hidden w-full relative transition-[padding] duration-500 ease-out ${(isCreatingMode || !!reviewResult || view === 'resultsList') ? 'theme-blue selection:bg-klein-blue selection:text-white' : 'selection:bg-green-forest selection:text-white'}`}>
       {/* Background elements */}
       <div 
-        className="absolute -inset-[10%] z-0 bg-gradient-to-br from-[#d4e0c1] via-[#f7f9f4] to-[#b5cca1] animate-bg-pan-gpu will-change-transform"
+        className="absolute inset-0 z-0 bg-[length:300%_300%] animate-bg-pan bg-gradient-to-br from-[#d4e0c1] via-[#f7f9f4] to-[#b5cca1]"
       />
       <WaveBackground active={isCreatingMode || !!reviewResult || view === 'resultsList'} />
       
