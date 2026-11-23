@@ -1,0 +1,81 @@
+name: Deploy IYKYK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-iykyk
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run lint
+
+      - name: Build application
+        env:
+          VITE_COMMIT_SHA: ${{ github.sha }}
+        run: npm run build
+
+      - name: Verify build output layout
+        run: |
+          test -f dist/index.html
+          test -f build/server.cjs
+          if find dist -name 'server.cjs*' | grep -q .; then
+            echo "ERROR: server.cjs found inside dist/"
+            exit 1
+          fi
+          if find dist -name '*.map' | grep -q .; then
+            echo "ERROR: sourcemap found inside dist/"
+            exit 1
+          fi
+
+      - name: Prune devDependencies and assemble staging payload
+        run: |
+          npm prune --omit=dev
+          rm -rf node_modules/.bin
+          mkdir -p _staging
+          cp -a dist build package.json node_modules _staging/
+          du -sh _staging
+
+      - name: Setup SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_KEY: ${{ secrets.DEPLOY_HOST_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_HOST_KEY" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Sync staging and trigger deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          rsync -az --delete --partial \
+            -e "ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes" \
+            _staging/ "${DEPLOY_USER}@${DEPLOY_HOST}:/www/wwwroot/iykyk/staging/"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "sudo /usr/local/bin/lumine-deploy iykyk ${{ github.sha }} iykyk.service"
