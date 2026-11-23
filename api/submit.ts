@@ -1,5 +1,13 @@
-import { ObjectId } from 'mongodb';
-import { getDb } from './_lib/db.js';
+import crypto from 'node:crypto';
+import {
+  DEFAULT_QUIZ_SETTINGS,
+  QuizSettings,
+  extractClientIp,
+  findQuizById,
+  getDb,
+  hasExistingResponse,
+  safeJsonParse,
+} from './_lib/db.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -9,56 +17,42 @@ export default async function handler(req: any, res: any) {
   const { quizId, participantName, participantScores, createdAt, deviceInfo, answers: clientAnswers } = req.body;
 
   if (!quizId || !participantName || !participantScores) {
-    return res.status(400).json({ 
-      error: 'Missing required fields', 
-      debug: { 
-        hasQuizId: !!quizId, 
-        hasParticipantName: !!participantName, 
-        hasParticipantScores: !!participantScores 
-      } 
+    return res.status(400).json({
+      error: 'Missing required fields',
+      debug: {
+        hasQuizId: !!quizId,
+        hasParticipantName: !!participantName,
+        hasParticipantScores: !!participantScores,
+      },
     });
   }
 
   try {
-    const db = await getDb();
-    
-    // Convert quizId to ObjectId if possible
-    let quizIdDb: any = quizId;
-    if (ObjectId.isValid(quizId)) {
-      quizIdDb = new ObjectId(quizId);
-    }
+    const db = getDb();
+    const ip = extractClientIp(req);
+    const browserId = typeof req.body.browserId === 'string' ? req.body.browserId : '';
 
-    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip || '').toString().split(',')[0].trim();
-    const browserId = req.body.browserId || '';
+    const quiz = findQuizById(db, quizId);
+    const quizSettings = quiz
+      ? safeJsonParse<QuizSettings>(quiz.settings, DEFAULT_QUIZ_SETTINGS)
+      : null;
 
-    // Fetch quiz to check settings
-    const quiz = await db.collection('Quizzes').findOne({
-      $or: [{ _id: quizIdDb }, { userId: quizId }]
-    });
+    if (quiz && quizSettings?.allowRepeat === false) {
+      const duplicate = hasExistingResponse(
+        db,
+        [quiz.id, quiz.user_id, quizId],
+        participantName,
+        browserId,
+        ip
+      );
 
-    if (quiz && quiz.settings?.allowRepeat === false) {
-      const orConditions: any[] = [{ participantName }];
-      if (browserId) {
-        orConditions.push({ browserId });
-      }
-      if (ip) {
-        orConditions.push({ ip });
-      }
-
-      const existingResponse = await db.collection('Responses').findOne({
-        $and: [
-          { $or: [{ quizId: quizId }, { quizId: quizIdDb }] },
-          { $or: orConditions }
-        ]
-      });
-
-      if (existingResponse) {
+      if (duplicate) {
         return res.status(400).json({ error: '该试卷仅限作答一次，检测到您已经提交过答案。' });
       }
     }
 
-    // Build the answers object as specified in the schema
-    const answers: any = clientAnswers || {};
+    const answers: Record<string, any> =
+      clientAnswers && typeof clientAnswers === 'object' ? { ...clientAnswers } : {};
     if (Array.isArray(participantScores)) {
       participantScores.forEach((score: any, index: number) => {
         const key = `q${index}`;
@@ -68,25 +62,31 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    const responseDoc = {
-      quizId: quizIdDb,
+    const responseIdStr = crypto.randomBytes(12).toString('hex');
+    const submittedAtIso =
+      createdAt && !Number.isNaN(Date.parse(createdAt))
+        ? new Date(createdAt).toISOString()
+        : new Date().toISOString();
+    const createdAtStr = createdAt || new Date().toISOString();
+    const storedQuizId = quiz ? quiz.id : quizId;
+
+    db.prepare(`
+      INSERT INTO responses (
+        id, response_id, quiz_id, participant_name, participant_scores,
+        answers, submitted_at, created_at, device_info, ip, browser_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      responseIdStr,
+      responseIdStr,
+      storedQuizId,
       participantName,
-      participantScores, // store for frontend backward-compatibility
-      answers,
-      submittedAt: createdAt ? new Date(createdAt) : new Date(),
-      createdAt: createdAt || new Date().toISOString(),
-      deviceInfo,
+      JSON.stringify(participantScores),
+      JSON.stringify(answers),
+      submittedAtIso,
+      createdAtStr,
+      deviceInfo ?? null,
       ip,
-      browserId,
-    };
-
-    const result = await db.collection('Responses').insertOne(responseDoc);
-    const responseIdStr = result.insertedId.toString();
-
-    // Also update the document with responseId string for full reliability
-    await db.collection('Responses').updateOne(
-      { _id: result.insertedId },
-      { $set: { responseId: responseIdStr } }
+      browserId
     );
 
     return res.status(200).json({ status: 'success', responseId: responseIdStr });

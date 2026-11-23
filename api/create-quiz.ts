@@ -1,4 +1,5 @@
-import { getDb } from './_lib/db.js';
+import crypto from 'node:crypto';
+import { DEFAULT_QUIZ_SETTINGS, getDb } from './_lib/db.js';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -12,26 +13,30 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const db = await getDb();
-    const quizData = {
-      hostName,
+    const db = getDb();
+    const quizIdStr = crypto.randomBytes(12).toString('hex');
+    const createdAtIso = createdAt && !Number.isNaN(Date.parse(createdAt))
+      ? new Date(createdAt).toISOString()
+      : new Date().toISOString();
+    const normalizedSettings = settings || DEFAULT_QUIZ_SETTINGS;
+
+    db.prepare(`
+      INSERT INTO quizzes (
+        id, user_id, host_name, title, description,
+        questions, host_scores, settings, secret, device_info, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      quizIdStr,
+      quizIdStr,
+      hostName ?? null,
       title,
-      description,
-      questions,
-      hostScores,
-      createdAt: createdAt ? new Date(createdAt) : new Date(),
-      deviceInfo,
+      description ?? null,
+      JSON.stringify(questions),
+      JSON.stringify(hostScores),
+      JSON.stringify(normalizedSettings),
       secret,
-      settings: settings || { allowRepeat: true, showAnalysis: true, shuffleQuestions: false },
-    };
-
-    const result = await db.collection('Quizzes').insertOne(quizData);
-    const quizIdStr = result.insertedId.toString();
-
-    // Update the document to contain the userId string field matching the auto-generated ID for full backward compatibility
-    await db.collection('Quizzes').updateOne(
-      { _id: result.insertedId },
-      { $set: { userId: quizIdStr } }
+      deviceInfo ?? null,
+      createdAtIso
     );
 
     return res.status(200).json({ message: 'Quiz saved successfully', userId: quizIdStr });
