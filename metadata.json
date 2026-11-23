@@ -1,6 +1,5 @@
 {
   "name": "IYKYK",
   "description": "研究一下别人眼中的你，和你自己眼中的你有什么区别？",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "requestFramePermissions": []
 }

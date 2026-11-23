@@ -12,7 +12,6 @@ import ResultView from "./components/views/ResultView";
 import CreateQuiz from "./components/CreateQuiz";
 import ResultsListView from "./components/views/ResultsListView";
 import ConfirmModal from "./components/ui/ConfirmModal";
-import { Analytics } from "@vercel/analytics/react";
 
 type ViewState = "home" | "quiz" | "overview" | "result" | "resultsList";
 
@@ -233,7 +232,7 @@ export default function App() {
     setBrowserId(bId);
   }, []);
 
-  const [commitHash, setCommitHash] = useState("main");
+  const commitHash = (import.meta.env.VITE_COMMIT_SHA || "main").slice(0, 7);
 
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showOverviewHomeConfirm, setShowOverviewHomeConfirm] = useState(false);
@@ -246,17 +245,6 @@ export default function App() {
       setShowQuizContent(false);
     }
   }, [isLoadingQuiz]);
-
-  useEffect(() => {
-    fetch('https://api.github.com/repos/Lu-Mine/IYKYK/commits/main')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.sha) {
-          setCommitHash(data.sha.substring(0, 7));
-        }
-      })
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     const path = window.location.pathname;
