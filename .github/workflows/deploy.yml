@@ -33,6 +33,7 @@ jobs:
       - name: Build application
         env:
           VITE_COMMIT_SHA: ${{ github.sha }}
+          VITE_ICP_BEIAN: ${{ vars.VITE_ICP_BEIAN }}
         run: npm run build
 
       - name: Verify build output layout

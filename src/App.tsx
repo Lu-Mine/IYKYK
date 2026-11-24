@@ -233,6 +233,7 @@ export default function App() {
   }, []);
 
   const commitHash = (import.meta.env.VITE_COMMIT_SHA || "main").slice(0, 7);
+  const icpBeian = (import.meta.env.VITE_ICP_BEIAN || "").trim();
 
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showOverviewHomeConfirm, setShowOverviewHomeConfirm] = useState(false);
@@ -745,7 +746,7 @@ export default function App() {
   };
 
   return (
-    <div className={`h-[100dvh] text-gray-dark font-sans flex flex-col items-center px-4 pt-6 pb-6 sm:px-8 sm:pt-12 sm:pb-12 overflow-hidden w-full relative transition-[padding] duration-500 ease-out ${(isCreatingMode || !!reviewResult || view === 'resultsList') ? 'theme-blue selection:bg-klein-blue selection:text-white' : 'selection:bg-green-forest selection:text-white'}`}>
+    <div className={`h-[100dvh] text-gray-dark font-sans flex flex-col items-center px-4 pt-6 ${icpBeian ? 'pb-4 sm:pb-6' : 'pb-6 sm:pb-12'} sm:px-8 sm:pt-12 overflow-hidden w-full relative transition-[padding] duration-500 ease-out ${(isCreatingMode || !!reviewResult || view === 'resultsList') ? 'theme-blue selection:bg-klein-blue selection:text-white' : 'selection:bg-green-forest selection:text-white'}`}>
       {/* Background elements */}
       <div 
         className="absolute inset-0 z-0 bg-[length:300%_300%] animate-bg-pan bg-gradient-to-br from-[#d4e0c1] via-[#f7f9f4] to-[#b5cca1]"
@@ -1112,6 +1113,23 @@ export default function App() {
           )}
         </AnimatePresence>
       </motion.div>
+
+      {icpBeian && (
+        <footer className="relative z-10 shrink-0 pt-2 text-center text-[11px] sm:text-xs font-medium tracking-wide text-gray-dark/70 select-none">
+          <a
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`transition-colors ${
+              isCreatingMode || !!reviewResult || view === "resultsList"
+                ? "hover:text-klein-blue"
+                : "hover:text-green-dark"
+            }`}
+          >
+            {icpBeian}
+          </a>
+        </footer>
+      )}
 
       {/* Secret Word Modal */}
       <AnimatePresence>
